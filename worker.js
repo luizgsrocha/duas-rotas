@@ -22,26 +22,26 @@ export default{async fetch(request,env){
  }catch(e){return json({error:"Falha ao consultar o BlaBlaCar",detail:String(e?.message||e)},502)}
 }};
 async function fetchRoute(from,to,date){
- const url=`https://www.blablacar.com.br/ride-sharing/${SLUG[from]}/${SLUG[to]}`;
+ const url=`https://www.blablacar.com.br/carpool/routes/${SLUG[from]}/${SLUG[to]}`;
  const r=await fetch(url,{headers:{"Accept":"text/html","Accept-Language":"pt-BR,pt;q=0.9","User-Agent":"Mozilla/5.0"}});
  if(!r.ok)throw new Error(`${from}→${to}: HTTP ${r.status}`);
  return parse(await r.text(),from,to,date,url);
 }
 function parse(html,from,to,date,url){
- const text=decode(html.replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," ").replace(/\s+/g," "));
+ const text=decode(html.replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," ").replace(/\s+/g," "));
  const patterns=[
-  /(\d{1,2}:\d{2})[\s\S]{0,260}?(\d{1,2}:\d{2})[\s\S]{0,260}?R\$\s*([0-9]+(?:[,.][0-9]{1,2})?)/g,
-  /R\$\s*([0-9]+(?:[,.][0-9]{1,2})?)[\s\S]{0,260}?(\d{1,2}:\d{2})[\s\S]{0,260}?(\d{1,2}:\d{2})/g
+  /(\d{1,2}:\d{2})\s+(?:\d+h(?:\d{1,2})?|\d{1,3}\s*min)\s+([^0-9]{2,80}?)\s+(\d{1,2}:\d{2})(?:\+1)?\s+([^R]{2,80}?)\s+R\$\s*([0-9]+)(?:\s*[,^{]00)?/g
  ];
  const out=[];
- for(let p=0;p<patterns.length;p++){let m;while((m=patterns[p].exec(text))){
-   const dep=p===0?m[1]:m[2],arr=p===0?m[2]:m[3],raw=p===0?m[3]:m[1],price=Number(raw.replace(",","."));
+ for(const re of patterns){let m;while((m=re.exec(text))){
+   const dep=m[1],actualFrom=cleanCity(m[2]),arr=m[3],actualTo=cleanCity(m[4]),price=Number(m[5]);
    if(!Number.isFinite(price))continue;
    let ad=date;if(minutes(arr)<minutes(dep))ad=nextDay(date);
-   out.push({from,to,departure:`${date}T${pad(dep)}:00`,arrival:`${ad}T${pad(arr)}:00`,price,url});
+   out.push({from:actualFrom||from,to:actualTo||to,departure:`${date}T${pad(dep)}:00`,arrival:`${ad}T${pad(arr)}:00`,price,url});
  }}
  return unique(out);
 }
+const cleanCity=s=>s.replace(/^(Mais barata e mais rápida|Mais barata|Mais rápida|Mais cedo)\s*/i,"").trim();
 const minutes=t=>{const[a,b]=t.split(":").map(Number);return a*60+b};
 const pad=t=>t.split(":").map((x,i)=>i===0?x.padStart(2,"0"):x).join(":");
 function decode(s){return s.replace(/&nbsp;|&#160;/g," ").replace(/&amp;/g,"&").replace(/&gt;/g,">").replace(/&lt;/g,"<").replace(/&#x27;|&#39;/g,"'").replace(/&quot;/g,'"')}
