@@ -2,8 +2,8 @@ import{buildRoutes,sortRoutes}from"./route-engine.js";
 const $=s=>document.querySelector(s); const fmt=d=>new Date(d).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
 $("#date").value=new Date().toISOString().slice(0,10);
 let current=[];
-async function run(){const date=$("#date").value,time=$("#time").value,margin=+$("#margin").value;$("#status").textContent="Montando as melhores combinações…";
- const rides=demoRides(date).filter(r=>r.departure>=date+"T"+time); current=buildRoutes(rides,{minConnection:margin});render()}
+async function run(){const date=$("#date").value,time=$("#time").value;$("#status").textContent="Montando as melhores combinações…";
+ const rides=demoRides(date).filter(r=>r.departure>=date+"T"+time); current=buildRoutes(rides,{minConnection:0});render()}
 function render(){const routes=sortRoutes(current,$("#sort").value);$("#status").textContent=routes.length?routes.length+" combinações válidas encontradas.":"Nenhuma combinação encontrada.";
  $("#results").innerHTML=routes.map((r,i)=>`<article class="route ${i===0?"best":""}"><h3>${i===0?"⭐ ":""}${r.connections===0?"Direto":r.connections+" baldeação"+(r.connections>1?"ões":"")}</h3><div class="legs">${r.legs.map(l=>`<div class="leg"><b>${l.from} → ${l.to}</b><br>${fmt(l.departure)} → ${fmt(l.arrival)} · R$ ${l.price.toFixed(2).replace(".",",")}</div>`).join("")}</div><div class="meta"><span>R$ ${r.price.toFixed(2).replace(".",",")}</span><span>${Math.floor(r.duration/60)}h${String(r.duration%60).padStart(2,"0")}</span><span class="badge">${r.connections?"com conexão":"direto"}</span></div><div class="actions">${r.legs.map((l,n)=>`<a href="${l.url}" target="_blank" rel="noopener">Abrir ${r.legs.length>1?`trecho ${n+1}`:"no BlaBlaCar"} ↗</a>`).join("")}</div></article>`).join("")}
 $("#search").onclick=run;$("#sort").onchange=render;
