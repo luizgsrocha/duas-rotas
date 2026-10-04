@@ -5,7 +5,13 @@ const ROUTES=[
 const SLUG={"Pirassununga":"pirassununga-sp","Taubaté":"taubate-sp","Campinas":"campinas-sp","São José dos Campos":"sao-jose-dos-campos-sp"};
 export default{async fetch(request,env){
  const u=new URL(request.url);
- if(u.pathname!=="/api/rides")return env.ASSETS.fetch(request);
+ if(u.pathname!=="/api/rides"){
+  const response=await env.ASSETS.fetch(request);
+  const headers=new Headers(response.headers);
+  if(u.pathname==="/"||u.pathname.endsWith(".html"))headers.set("Cache-Control","no-cache, no-store, must-revalidate");
+  else if(u.pathname.endsWith(".js")||u.pathname.endsWith(".css"))headers.set("Cache-Control","public, max-age=3600, must-revalidate");
+  return new Response(response.body,{status:response.status,statusText:response.statusText,headers});
+ }
  try{
   const date=u.searchParams.get("date");
   if(!/^\d{4}-\d{2}-\d{2}$/.test(date||""))return json({error:"Data inválida"},400);
