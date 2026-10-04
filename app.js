@@ -8,7 +8,7 @@ async function run(){
  $("#status").textContent="Buscando caronas reais no BlaBlaCar…";$("#results").innerHTML="";
  try{
   const res=await fetch("/api/rides?date="+encodeURIComponent(date));
-  const data=await res.json();if(!res.ok)throw new Error(data.error||"Falha na busca");
+  const raw=await res.text(); let data; try{data=JSON.parse(raw)}catch{throw new Error(`API retornou resposta inválida (HTTP ${res.status})`)} if(!res.ok)throw new Error(data.error||"Falha na busca");
   const rides=data.rides.filter(r=>r.departure>=date+"T"+time);
   current=buildRoutes(rides,{minConnection:0});render();
   if(!data.count)$("#status").textContent="Nenhuma carona pôde ser lida para essa data. Abra as buscas no BlaBlaCar para conferir.";
