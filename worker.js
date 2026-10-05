@@ -6,7 +6,7 @@ export default{async fetch(request,env){
   const date=u.searchParams.get("date"),key=u.searchParams.get("destination")||"taubate",dest=DESTINATIONS[key];
   if(!/^\d{4}-\d{2}-\d{2}$/.test(date||""))return json({error:"Data inválida"},400);if(!dest)return json({error:"Destino inválido"},400);
   const direct=await getRides("pirassununga",dest.slug,date);let transfers=[];
-  if(key==="taubate"){const [first,second]=await Promise.all([getRides("pirassununga","campinas",date),getRides("campinas","taubate",date)]);for(const a of first.rides)for(const b of second.rides){const wait=minutes(b.departure)-minutes(a.arrival);if(wait>=0)transfers.push({via:"Campinas",waitMinutes:wait,first:a,second:b})}}
+  if(key==="taubate"){const [first,second]=await Promise.all([getRides("pirassununga","campinas",date),getRides("campinas","taubate",date)]);for(const a of first.rides)for(const b of second.rides){const wait=minutes(b.departure)-minutes(a.arrival);if(wait>=5&&wait<=60)transfers.push({via:"Campinas",waitMinutes:wait,first:a,second:b})}}
   return json({date,destination:key,destinationName:dest.name,exists:direct.rides.length>0||transfers.length>0,count:direct.rides.length,directCount:direct.rides.length,transferCount:transfers.length,source:"BuscaOnibus",rides:direct.rides,transfers,sourceUrl:direct.sourceUrl});
  }catch(e){return json({error:"Falha ao consultar as caronas",detail:String(e&&e.message||e)},502)}
 }};
