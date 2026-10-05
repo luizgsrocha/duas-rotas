@@ -1,4 +1,4 @@
-const DESTINATIONS={taubate:{name:"Taubaté",slug:"taubate"},sao-jose-dos-campos:{name:"São José dos Campos",slug:"sao-jose-dos-campos"},campinas:{name:"Campinas",slug:"campinas"}};
+const DESTINATIONS={taubate:{name:"Taubaté",slug:"taubate"},"sao-jose-dos-campos":{name:"São José dos Campos",slug:"sao-jose-dos-campos"},campinas:{name:"Campinas",slug:"campinas"}};
 export default{async fetch(request,env){
  const u=new URL(request.url);
  if(u.pathname!=="/api/exists"){const r=await env.ASSETS.fetch(request),h=new Headers(r.headers);if(u.pathname==="/"||u.pathname.endsWith(".html"))h.set("Cache-Control","no-cache, no-store, must-revalidate");else if(u.pathname.endsWith(".js")||u.pathname.endsWith(".css"))h.set("Cache-Control","public, max-age=0, must-revalidate");return new Response(r.body,{status:r.status,statusText:r.statusText,headers:h})}
