@@ -46,11 +46,22 @@ async function loadGeoCities(){
 function findGeoCity(cities,label){const n=normalizeName(label);return cities.find(x=>normalizeName(x.name)===n)}
 function normalizeName(v){return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase()}
 function selectCandidates(cities,from,to,limit){
- const direct=distance(from,to),maxDetour=Math.max(70,direct*.35);
- return cities.filter(c=>c.slug!==from.slug&&c.slug!==to.slug)
-   .map(c=>{const a=distance(from,c),b=distance(c,to),detour=a+b-direct,progress=direct-b;return{c,detour,progress,score:detour+b*.03}})
-   .filter(x=>x.progress>5&&x.detour<=maxDetour)
-   .sort((a,b)=>a.score-b.score).slice(0,limit).map(x=>x.c)
+ const direct=distance(from,to),maxDetour=Math.max(70,direct*.35),bins=Array.from({length:limit},()=>[]);
+ for(const c of cities){
+   if(c.slug===from.slug||c.slug===to.slug)continue;
+   const a=distance(from,c),b=distance(c,to),detour=a+b-direct,progress=direct-b;
+   if(progress<=5||progress>=direct-5||detour>maxDetour)continue;
+   const ratio=progress/direct,bin=Math.min(limit-1,Math.max(0,Math.floor(ratio*limit)));
+   bins[bin].push({c,detour,score:detour+a*.01+b*.01})
+ }
+ const selected=bins.map(xs=>xs.sort((a,b)=>a.score-b.score)[0]).filter(Boolean).map(x=>x.c);
+ if(selected.length<limit){
+   const used=new Set(selected.map(x=>x.slug)),extra=cities.filter(c=>c.slug!==from.slug&&c.slug!==to.slug&&!used.has(c.slug))
+     .map(c=>{const a=distance(from,c),b=distance(c,to),detour=a+b-direct,progress=direct-b;return{c,detour,progress}})
+     .filter(x=>x.progress>5&&x.progress<direct-5&&x.detour<=maxDetour).sort((a,b)=>a.detour-b.detour);
+   for(const x of extra){if(selected.length>=limit)break;selected.push(x.c)}
+ }
+ return selected.sort((a,b)=>distance(from,a)-distance(from,b))
 }
 function waitMinutes(arrival,departure){const a=minutes(arrival),b=minutes(departure);if(a<0||b<0)return-1;return b>=a?b-a:b+1440-a}
 function makeRoute(legs){return{legs,totalPrice:legs.reduce((s,x)=>s+price(x.ride.price),0)}}
