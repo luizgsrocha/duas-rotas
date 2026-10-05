@@ -1,19 +1,15 @@
 const $=s=>document.querySelector(s);
 const theme=$("#theme"),media=matchMedia("(prefers-color-scheme: dark)");
 function applyTheme(v){document.documentElement.dataset.theme=v==="auto"?(media.matches?"dark":"light"):v}
-theme.value=localStorage.getItem("theme")||"auto";applyTheme(theme.value);
-theme.onchange=()=>{localStorage.setItem("theme",theme.value);applyTheme(theme.value)};
-media.addEventListener("change",()=>{if(theme.value==="auto")applyTheme("auto")});
-$("#date").value=new Date().toLocaleDateString("en-CA",{timeZone:"America/Sao_Paulo"});
-$("#search").onclick=check;
+theme.value=localStorage.getItem("theme")||"auto";applyTheme(theme.value);theme.onchange=()=>{localStorage.setItem("theme",theme.value);applyTheme(theme.value)};media.addEventListener("change",()=>{if(theme.value==="auto")applyTheme("auto")});
+$("#date").value=new Date().toLocaleDateString("en-CA",{timeZone:"America/Sao_Paulo"});$("#search").onclick=check;
 async function check(){
- const date=$("#date").value;$("#status").textContent="Verificando Pirassununga → Taubaté…";$("#results").innerHTML="";
+ const date=$("#date").value,destination=$("#destination").value,destinationName=$("#destination").selectedOptions[0].text;$("#status").textContent="Verificando Pirassununga → "+destinationName+"…";$("#results").innerHTML="";
  try{
-  const r=await fetch("/api/exists?date="+encodeURIComponent(date),{cache:"no-store"}),raw=await r.text();let d;try{d=JSON.parse(raw)}catch{throw new Error("Resposta inválida do servidor")}
-  if(!r.ok)throw new Error(d.error||"Falha na consulta");
+  const r=await fetch("/api/exists?date="+encodeURIComponent(date)+"&destination="+encodeURIComponent(destination),{cache:"no-store"}),raw=await r.text();let d;try{d=JSON.parse(raw)}catch{throw new Error("Resposta inválida do servidor")}if(!r.ok)throw new Error(d.error||"Falha na consulta");
   $("#status").textContent=d.exists?"SIM — "+d.count+" carona(s) encontrada(s).":"NÃO — nenhuma carona encontrada nessa data.";
-  if(!d.exists){$("#results").innerHTML='<article class="route"><h3>Nenhuma carona encontrada</h3><p>Pirassununga → Taubaté · '+formatDate(date)+"</p></article>";return}
-  $("#results").innerHTML=d.rides.map((x,i)=>'<article class="route best"><h3>Carona '+(i+1)+'</h3><p>Pirassununga → Taubaté · '+formatDate(date)+'</p><p>'+(x.departure||"—")+' → '+(x.arrival||"—")+(x.price?" · R$ "+x.price:"")+'</p><div class="actions"><a href="'+esc(x.url)+'" target="_blank" rel="noopener">Ver na BlaBlaCar ↗</a></div></article>').join("");
+  if(!d.exists){$("#results").innerHTML='<article class="route"><h3>Nenhuma carona encontrada</h3><p>Pirassununga → '+esc(d.destinationName)+' · '+formatDate(date)+"</p></article>";return}
+  $("#results").innerHTML=d.rides.map((x,i)=>'<article class="route best"><h3>Carona '+(i+1)+'</h3><p>Pirassununga → '+esc(d.destinationName)+' · '+formatDate(date)+'</p><p>'+(x.departure||"—")+' → '+(x.arrival||"—")+(x.price?" · R$ "+x.price:"")+'</p><div class="actions"><a href="'+esc(x.url)+'" target="_blank" rel="noopener">Ver na BlaBlaCar ↗</a></div></article>').join("");
  }catch(e){$("#status").textContent="Não foi possível verificar agora: "+e.message}
 }
 function formatDate(s){const a=s.split("-");return a[2]+"/"+a[1]+"/"+a[0]}
