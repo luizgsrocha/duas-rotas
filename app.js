@@ -1,9 +1,9 @@
+const $=s=>document.querySelector(s);
 const theme=$("#theme"),media=matchMedia("(prefers-color-scheme: dark)");
 function applyTheme(v){document.documentElement.dataset.theme=v==="auto"?(media.matches?"dark":"light"):v}
 theme.value=localStorage.getItem("theme")||"auto";applyTheme(theme.value);
 theme.onchange=()=>{localStorage.setItem("theme",theme.value);applyTheme(theme.value)};
 media.addEventListener("change",()=>{if(theme.value==="auto")applyTheme("auto")});
-const $=s=>document.querySelector(s);
 $("#date").value=new Date().toLocaleDateString("en-CA",{timeZone:"America/Sao_Paulo"});
 $("#search").onclick=check;
 async function check(){
