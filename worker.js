@@ -1,14 +1,13 @@
 const CITIES={pirassununga:{name:"Pirassununga",slug:"pirassununga",lat:-21.996,lng:-47.426},taubate:{name:"Taubaté",slug:"taubate",lat:-23.026,lng:-45.555},"sao-jose-dos-campos":{name:"São José dos Campos",slug:"sao-jose-dos-campos",lat:-23.189,lng:-45.884},campinas:{name:"Campinas",slug:"campinas",lat:-22.906,lng:-47.061}};
 const DEFAULT_MIN_WAIT=5,DEFAULT_MAX_WAIT=60,DEFAULT_MAX_TRANSFERS=2,MAX_TRANSFERS=10;
 export default{async fetch(request,env){const u=new URL(request.url);if(u.pathname==="/api/cities"){try{const data=await loadLocalCities(env,request);return json(data.map(({name,slug,uf})=>({name,slug,uf})))}catch(e){return json({error:"Falha ao carregar municípios"},502)}}if(u.pathname!=="/api/exists"){const r=await env.ASSETS.fetch(request),h=new Headers(r.headers);if(u.pathname==="/"||u.pathname.endsWith(".html"))h.set("Cache-Control","no-cache, no-store, must-revalidate");else if(u.pathname.endsWith(".js")||u.pathname.endsWith(".css"))h.set("Cache-Control","public, max-age=0, must-revalidate");return new Response(r.body,{status:r.status,statusText:r.statusText,headers:h})}try{const date=u.searchParams.get("date"),origin=u.searchParams.get("origin")||"pirassununga",key=u.searchParams.get("destination")||"taubate",originName=u.searchParams.get("originName")||displayName(origin),destinationName=u.searchParams.get("destinationName")||displayName(key),minWait=parseWait(u.searchParams.get("minWait"),DEFAULT_MIN_WAIT),maxWait=parseWait(u.searchParams.get("maxWait"),DEFAULT_MAX_WAIT),maxTransfers=parseWait(u.searchParams.get("maxTransfers"),DEFAULT_MAX_TRANSFERS);if(minWait<0||maxWait<minWait||maxWait>720)return json({error:"Intervalo de espera inválido"},400);if(maxTransfers<0||maxTransfers>MAX_TRANSFERS)return json({error:"Quantidade máxima de baldeações inválida"},400);if(!/^\d{4}-\d{2}-\d{2}$/.test(date||""))return json({error:"Data inválida"},400);if(!validSlug(origin)||!validSlug(key))return json({error:"Cidade inválida"},400);if(origin===key)return json({error:"Origem e destino devem ser diferentes"},400);const mode=u.searchParams.get("mode")||"all";if(!["all","direct","transfers"].includes(mode))return json({error:"Modo inválido"},400);let routes;const geo=await loadLocalCities(env,request);if(mode==="direct"||maxTransfers===0){const rides=await getRides(origin,key,date,fromBuscaSlug(geo,origin),fromBuscaSlug(geo,key));routes=rides.map(ride=>makeRoute([{from:origin,to:key,fromName:originName,toName:destinationName,ride}]));if(mode==="transfers")routes=[]}else{routes=await findRoutes(origin,key,date,originName,destinationName,minWait,maxWait,maxTransfers,geo);if(mode==="transfers")routes=routes.filter(x=>x.legs.length>1)}const direct=routes.filter(x=>x.legs.length===1),transfers=routes.filter(x=>x.legs.length>1);return json({date,origin,originName,destination:key,destinationName,mode,exists:routes.length>0,count:routes.length,directCount:direct.length,transferCount:transfers.length,source:"BuscaOnibus",routes})}catch(e){return json({error:"Falha ao consultar as caronas",detail:String(e&&e.message||e)},502)}}};
-const CANDIDATE_LIMIT=6;
 const HUB_SLUGS=new Set(["sao-paulo","campinas","sao-jose-dos-campos","sorocaba","ribeirao-preto","jundiai","piracicaba","bauru","sao-jose-do-rio-preto","araraquara","limeira","americana"]);
 async function findRoutes(origin,target,date,originName,targetName,minWait,maxWait,maxTransfers,geo){
  const routes=[],direct=await getRides(origin,target,date,fromBuscaSlug(geo,origin),fromBuscaSlug(geo,target));
  for(const ride of direct)routes.push(makeRoute([{from:origin,to:target,fromName:originName,toName:targetName,ride}]));
  const from=findGeoCity(geo,originName),to=findGeoCity(geo,targetName);
  if(!from||!to)return routes;
- const candidates=selectCandidates(geo,from,to,CANDIDATE_LIMIT),hubs=selectHubs(geo,from,to),nodeMap=new Map([[from.slug,from],...candidates.map(c=>[c.slug,c]),...hubs.map(c=>[c.slug,c]),[to.slug,to]]),nodes=[...nodeMap.values()],pairs=[];
+ const hubs=selectHubs(geo,from,to),nodes=[from,...hubs,to],pairs=[];
  for(let i=0;i<nodes.length;i++)for(let j=0;j<nodes.length;j++){
    if(i===j)continue;
    const a=nodes[i],b=nodes[j];
@@ -41,24 +40,6 @@ async function findRoutes(origin,target,date,originName,targetName,minWait,maxWa
 async function loadLocalCities(env,request){const url=new URL("/cities.json",request.url),r=await env.ASSETS.fetch(url);if(!r.ok)throw new Error("Base local de cidades indisponível");const data=await r.json();if(!Array.isArray(data))throw new Error("Base local de cidades inválida");return data}
 function findGeoCity(cities,label){const n=normalizeName(label);return cities.find(x=>normalizeName(x.name)===n)}
 function normalizeName(v){return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase()}
-function selectCandidates(cities,from,to,limit){
- const direct=distance(from,to),maxDetour=Math.max(70,direct*.35),bins=Array.from({length:limit},()=>[]);
- for(const c of cities){
-   if(c.slug===from.slug||c.slug===to.slug)continue;
-   const a=distance(from,c),b=distance(c,to),detour=a+b-direct,progress=direct-b;
-   if(progress<=5||progress>=direct-5||detour>maxDetour)continue;
-   const ratio=progress/direct,bin=Math.min(limit-1,Math.max(0,Math.floor(ratio*limit)));
-   bins[bin].push({c,detour,score:detour+a*.01+b*.01})
- }
- const selected=bins.map(xs=>xs.sort((a,b)=>a.score-b.score)[0]).filter(Boolean).map(x=>x.c);
- if(selected.length<limit){
-   const used=new Set(selected.map(x=>x.slug)),extra=cities.filter(c=>c.slug!==from.slug&&c.slug!==to.slug&&!used.has(c.slug))
-     .map(c=>{const a=distance(from,c),b=distance(c,to),detour=a+b-direct,progress=direct-b;return{c,detour,progress}})
-     .filter(x=>x.progress>5&&x.progress<direct-5&&x.detour<=maxDetour).sort((a,b)=>a.detour-b.detour);
-   for(const x of extra){if(selected.length>=limit)break;selected.push(x.c)}
- }
- return selected.sort((a,b)=>distance(from,a)-distance(from,b))
-}
 function selectHubs(cities,from,to){
  const direct=distance(from,to),maxDetour=Math.max(70,direct*.35);
  return cities.filter(c=>{
