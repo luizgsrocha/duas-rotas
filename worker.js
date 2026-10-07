@@ -2,12 +2,13 @@ const CITIES={pirassununga:{name:"Pirassununga",slug:"pirassununga",lat:-21.996,
 const DEFAULT_MIN_WAIT=5,DEFAULT_MAX_WAIT=60,DEFAULT_MAX_TRANSFERS=2,MAX_TRANSFERS=10;
 export default{async fetch(request,env){const u=new URL(request.url);if(u.pathname==="/api/cities"){try{const data=await loadLocalCities(env,request);return json(data.map(({name,slug,uf})=>({name,slug,uf})))}catch(e){return json({error:"Falha ao carregar municípios"},502)}}if(u.pathname!=="/api/exists"){const r=await env.ASSETS.fetch(request),h=new Headers(r.headers);if(u.pathname==="/"||u.pathname.endsWith(".html"))h.set("Cache-Control","no-cache, no-store, must-revalidate");else if(u.pathname.endsWith(".js")||u.pathname.endsWith(".css"))h.set("Cache-Control","public, max-age=0, must-revalidate");return new Response(r.body,{status:r.status,statusText:r.statusText,headers:h})}try{const date=u.searchParams.get("date"),origin=u.searchParams.get("origin")||"pirassununga",key=u.searchParams.get("destination")||"taubate",originName=u.searchParams.get("originName")||displayName(origin),destinationName=u.searchParams.get("destinationName")||displayName(key),minWait=parseWait(u.searchParams.get("minWait"),DEFAULT_MIN_WAIT),maxWait=parseWait(u.searchParams.get("maxWait"),DEFAULT_MAX_WAIT),maxTransfers=parseWait(u.searchParams.get("maxTransfers"),DEFAULT_MAX_TRANSFERS);if(minWait<0||maxWait<minWait||maxWait>720)return json({error:"Intervalo de espera inválido"},400);if(maxTransfers<0||maxTransfers>MAX_TRANSFERS)return json({error:"Quantidade máxima de baldeações inválida"},400);if(!/^\d{4}-\d{2}-\d{2}$/.test(date||""))return json({error:"Data inválida"},400);if(!validSlug(origin)||!validSlug(key))return json({error:"Cidade inválida"},400);if(origin===key)return json({error:"Origem e destino devem ser diferentes"},400);const mode=u.searchParams.get("mode")||"all";if(!["all","direct","transfers"].includes(mode))return json({error:"Modo inválido"},400);let routes;const geo=await loadLocalCities(env,request);if(mode==="direct"||maxTransfers===0){const rides=await getRides(origin,key,date,fromBuscaSlug(geo,origin),fromBuscaSlug(geo,key));routes=rides.map(ride=>makeRoute([{from:origin,to:key,fromName:originName,toName:destinationName,ride}]));if(mode==="transfers")routes=[]}else{routes=await findRoutes(origin,key,date,originName,destinationName,minWait,maxWait,maxTransfers,geo);if(mode==="transfers")routes=routes.filter(x=>x.legs.length>1)}const direct=routes.filter(x=>x.legs.length===1),transfers=routes.filter(x=>x.legs.length>1);return json({date,origin,originName,destination:key,destinationName,mode,exists:routes.length>0,count:routes.length,directCount:direct.length,transferCount:transfers.length,source:"BuscaOnibus",routes})}catch(e){return json({error:"Falha ao consultar as caronas",detail:String(e&&e.message||e)},502)}}};
 const CANDIDATE_LIMIT=6;
+const HUB_SLUGS=new Set(["sao-paulo","campinas","sao-jose-dos-campos","sorocaba","ribeirao-preto","jundiai","piracicaba","bauru","sao-jose-do-rio-preto","araraquara","limeira","americana"]);
 async function findRoutes(origin,target,date,originName,targetName,minWait,maxWait,maxTransfers,geo){
  const routes=[],direct=await getRides(origin,target,date,fromBuscaSlug(geo,origin),fromBuscaSlug(geo,target));
  for(const ride of direct)routes.push(makeRoute([{from:origin,to:target,fromName:originName,toName:targetName,ride}]));
  const from=findGeoCity(geo,originName),to=findGeoCity(geo,targetName);
  if(!from||!to)return routes;
- const candidates=selectCandidates(geo,from,to,CANDIDATE_LIMIT),nodes=[from,...candidates,to],pairs=[];
+ const candidates=selectCandidates(geo,from,to,CANDIDATE_LIMIT),hubs=selectHubs(geo,from,to),nodeMap=new Map([[from.slug,from],...candidates.map(c=>[c.slug,c]),...hubs.map(c=>[c.slug,c]),[to.slug,to]]),nodes=[...nodeMap.values()],pairs=[];
  for(let i=0;i<nodes.length;i++)for(let j=0;j<nodes.length;j++){
    if(i===j)continue;
    const a=nodes[i],b=nodes[j];
@@ -57,6 +58,14 @@ function selectCandidates(cities,from,to,limit){
    for(const x of extra){if(selected.length>=limit)break;selected.push(x.c)}
  }
  return selected.sort((a,b)=>distance(from,a)-distance(from,b))
+}
+function selectHubs(cities,from,to){
+ const direct=distance(from,to),maxDetour=Math.max(70,direct*.35);
+ return cities.filter(c=>{
+   if(!HUB_SLUGS.has(c.slug)||c.slug===from.slug||c.slug===to.slug)return false;
+   const a=distance(from,c),b=distance(c,to),detour=a+b-direct,progress=direct-b;
+   return progress>5&&progress<direct-5&&detour<=maxDetour
+ }).sort((a,b)=>distance(from,a)-distance(from,b))
 }
 function waitMinutes(arrival,departure){const a=minutes(arrival),b=minutes(departure);if(a<0||b<0)return-1;return b>=a?b-a:b+1440-a}
 function makeRoute(legs){return{legs,totalPrice:legs.reduce((s,x)=>s+price(x.ride.price),0)}}
