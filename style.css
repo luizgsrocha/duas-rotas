@@ -23,3 +23,8 @@
 
 /* Quick result filters */
 .result-filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.result-filters .result-filter{width:auto;min-height:42px;padding:9px 14px;border:1px solid var(--border);border-radius:999px;background:var(--card);color:var(--text);font:inherit;font-size:.88rem;font-weight:650;cursor:pointer}.result-filters .result-filter.active{background:var(--accent);border-color:var(--accent);color:#fff}.result-filters .result-filter:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.result-filter-count{font-size:.82rem;color:var(--muted);margin:10px 0}.results-tools{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:12px}@media(max-width:520px){.result-filters{width:100%}.result-filters .result-filter{flex:1;padding:9px 8px;font-size:.82rem}}
+
+/* v0.6.0: compact search widths without shrinking tap targets */
+.search .route-fields{grid-template-columns:minmax(0,280px) auto minmax(0,280px);justify-content:start;width:100%;gap:10px}.search .route-fields .destinations{width:100%}.search .date-field{width:100%;max-width:240px}.search .date-control{width:100%}.search .route-fields .city-input{width:100%}
+@media(max-width:650px){.search .route-fields{grid-template-columns:minmax(0,320px);justify-content:start;gap:8px}.search .route-fields .origin-field{grid-column:1;grid-row:1}.search .route-fields .swap{grid-column:1;grid-row:2;justify-self:center;align-self:center;min-height:44px;min-width:48px}.search .route-fields .destinations{grid-column:1;grid-row:3}.search .date-field{max-width:240px}}
+@media(max-width:360px){.search .route-fields{grid-template-columns:minmax(0,1fr)}.search .date-field{max-width:100%}}
