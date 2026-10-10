@@ -34,3 +34,27 @@
 /* v0.6.7: readable summaries without opening each result group */
 .combination-waits{display:block;padding:9px 11px;border-radius:8px;background:var(--linkbg);color:var(--text);font-size:.82rem;line-height:1.45}
 .route.group[open]>.combination-list{display:grid}
+
+/* v0.6.8: cards use their available width on phones, tablets and desktops */
+.route-combination{container-type:inline-size}
+.route-combination>summary{gap:10px}
+.combination-times{display:grid;grid-template-columns:minmax(0,1fr) minmax(75px,.7fr) minmax(0,1fr);align-items:center;gap:12px;width:100%}
+.combination-times>span{min-width:0}
+.combination-times .combination-duration{min-width:0}
+.combination-duration>span{white-space:nowrap}
+.combination-expand{width:100%;justify-content:center;gap:8px}
+.combination-waits{width:100%}
+@container (max-width:390px){
+ .combination-times{grid-template-columns:minmax(0,1fr) minmax(58px,.6fr) minmax(0,1fr);gap:6px}
+ .combination-times strong{font-size:clamp(1rem,5vw,1.25rem)}
+ .combination-times small{font-size:.73rem;line-height:1.35}
+ .combination-duration>span{font-size:.7rem}
+}
+@container (min-width:650px){
+ .route-combination>summary{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 20px;align-items:center;padding:16px 20px}
+ .combination-top{grid-column:2;grid-row:1;justify-content:flex-end;gap:16px}
+ .combination-times{grid-column:1;grid-row:1;gap:18px}
+ .combination-times strong{font-size:1.45rem}
+ .combination-waits{grid-column:1/-1}
+ .combination-expand{grid-column:1/-1;padding-top:8px}
+}
