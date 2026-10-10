@@ -1,7 +1,8 @@
 const CITIES={pirassununga:{name:"Pirassununga",slug:"pirassununga",lat:-21.996,lng:-47.426},taubate:{name:"Taubaté",slug:"taubate",lat:-23.026,lng:-45.555},"sao-jose-dos-campos":{name:"São José dos Campos",slug:"sao-jose-dos-campos",lat:-23.189,lng:-45.884},campinas:{name:"Campinas",slug:"campinas",lat:-22.906,lng:-47.061}};
 const DEFAULT_MIN_WAIT=5,DEFAULT_MAX_WAIT=60,DEFAULT_MAX_TRANSFERS=2,MAX_TRANSFERS=10;
 export default{async fetch(request,env){const u=new URL(request.url);if(u.pathname==="/api/blablacar-lab")return blablacarLab(request,env);if(u.pathname==="/api/blablacar-trip-lab")return blablacarTripLab(request);if(u.pathname==="/api/cities"){try{const data=await loadLocalCities(env,request);return json(data.map(({name,slug,uf})=>({name,slug,uf})))}catch(e){return json({error:"Falha ao carregar municípios"},502)}}if(u.pathname!=="/api/exists"){const r=await env.ASSETS.fetch(request),h=new Headers(r.headers);if(u.pathname==="/"||u.pathname.endsWith(".html"))h.set("Cache-Control","no-cache, no-store, must-revalidate");else if(u.pathname.endsWith(".js")||u.pathname.endsWith(".css"))h.set("Cache-Control","public, max-age=0, must-revalidate");return new Response(r.body,{status:r.status,statusText:r.statusText,headers:h})}try{const date=u.searchParams.get("date"),origin=u.searchParams.get("origin")||"pirassununga",key=u.searchParams.get("destination")||"taubate",originName=u.searchParams.get("originName")||displayName(origin),destinationName=u.searchParams.get("destinationName")||displayName(key),minWait=parseWait(u.searchParams.get("minWait"),DEFAULT_MIN_WAIT),maxWait=parseWait(u.searchParams.get("maxWait"),DEFAULT_MAX_WAIT),maxTransfers=parseWait(u.searchParams.get("maxTransfers"),DEFAULT_MAX_TRANSFERS);if(minWait<0||maxWait<minWait||maxWait>720)return json({error:"Intervalo de espera inválido"},400);if(maxTransfers<0||maxTransfers>MAX_TRANSFERS)return json({error:"Quantidade máxima de baldeações inválida"},400);if(!/^\d{4}-\d{2}-\d{2}$/.test(date||""))return json({error:"Data inválida"},400);if(!validSlug(origin)||!validSlug(key))return json({error:"Cidade inválida"},400);if(origin===key)return json({error:"Origem e destino devem ser diferentes"},400);const mode=u.searchParams.get("mode")||"all";if(!["all","direct","transfers"].includes(mode))return json({error:"Modo inválido"},400);let routes;const geo=await loadLocalCities(env,request);if(mode==="direct"||maxTransfers===0){const rides=await getDirectRides(origin,key,date,fromBuscaSlug(geo,origin),fromBuscaSlug(geo,key));routes=rides.map(ride=>makeRoute([{from:origin,to:key,fromName:originName,toName:destinationName,ride}]));if(mode==="transfers")routes=[]}else{routes=await findRoutes(origin,key,date,originName,destinationName,minWait,maxWait,maxTransfers,geo);if(mode==="transfers")routes=routes.filter(x=>x.legs.length>1)}const direct=routes.filter(x=>x.legs.length===1),transfers=routes.filter(x=>x.legs.length>1);return json({date,origin,originName,destination:key,destinationName,mode,exists:routes.length>0,count:routes.length,directCount:direct.length,transferCount:transfers.length,source:"BuscaOnibus",routes})}catch(e){return json({error:"Falha ao consultar as caronas",detail:String(e&&e.message||e)},502)}}};
-const HUB_SLUGS=new Set(["sao-paulo","campinas","sao-jose-dos-campos","sorocaba","ribeirao-preto","jundiai","piracicaba","bauru","sao-jose-do-rio-preto","araraquara","limeira","americana","belo-horizonte","uberlandia","juiz-de-fora","pocos-de-caldas","rio-de-janeiro","niteroi","volta-redonda","curitiba","londrina","maringa","ponta-grossa","cascavel"]);
+// Keep candidate count bounded: at most 6 hubs -> 42 directional pairs.
+const MAX_GEO_HUBS=6;
 async function findRoutes(origin,target,date,originName,targetName,minWait,maxWait,maxTransfers,geo){
  const routes=[],direct=await getRides(origin,target,date,fromBuscaSlug(geo,origin),fromBuscaSlug(geo,target));
  for(const ride of direct)routes.push(makeRoute([{from:origin,to:target,fromName:originName,toName:targetName,ride}]));
@@ -41,12 +42,29 @@ async function loadLocalCities(env,request){const url=new URL("/cities.json",req
 function findGeoCity(cities,label){const n=normalizeName(label);return cities.find(x=>normalizeName(x.name)===n)}
 function normalizeName(v){return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase()}
 function selectHubs(cities,from,to){
- const direct=distance(from,to),maxDetour=Math.max(70,direct*.35);
- return cities.filter(c=>{
-   if(!HUB_SLUGS.has(c.slug)||c.slug===from.slug||c.slug===to.slug)return false;
-   const a=distance(from,c),b=distance(c,to),detour=a+b-direct,progress=direct-b;
-   return progress>5&&progress<direct-5&&detour<=maxDetour
- }).sort((a,b)=>distance(from,a)-distance(from,b))
+ const direct=distance(from,to);
+ if(!Number.isFinite(direct)||direct<15)return [];
+ // Straight-line distance is a candidate heuristic, not a road routing estimate.
+ const maxDetour=Math.min(90,Math.max(15,direct*.18));
+ const candidates=cities.filter(c=>{
+   if(c.slug===from.slug||c.slug===to.slug||!Number.isFinite(c.lat)||!Number.isFinite(c.lng))return false;
+   const first=distance(from,c),second=distance(c,to);
+   const progress=direct-second,detour=first+second-direct;
+   return first>=8&&second>=8&&progress>5&&progress<direct-5&&detour<=maxDetour;
+ }).map(c=>{
+   const first=distance(from,c),second=distance(c,to);
+   const detour=first+second-direct;
+   // Prefer little detour and hubs distributed along the route.
+   return {city:c,detour,progress:first/direct,score:detour/Math.max(1,direct)+Math.abs(first/direct-.5)*.12};
+ }).sort((a,b)=>a.score-b.score||a.city.slug.localeCompare(b.city.slug));
+ const selected=[];
+ // Avoid spending all six requests on neighboring towns.
+ for(const candidate of candidates){
+   if(selected.some(x=>distance(x.city,candidate.city)<Math.min(35,Math.max(12,direct*.1))))continue;
+   selected.push(candidate);
+   if(selected.length===MAX_GEO_HUBS)break;
+ }
+ return selected.map(x=>x.city).sort((a,b)=>distance(from,a)-distance(from,b));
 }
 function waitMinutes(arrival,departure){const a=minutes(arrival),b=minutes(departure);if(a<0||b<0)return-1;return b>=a?b-a:b+1440-a}
 function makeRoute(legs){return{legs,totalPrice:legs.reduce((s,x)=>s+price(x.ride.price),0)}}
