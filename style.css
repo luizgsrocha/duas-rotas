@@ -58,3 +58,15 @@
  .combination-waits{grid-column:1/-1}
  .combination-expand{grid-column:1/-1;padding-top:8px}
 }
+
+/* v0.6.9: override inherited .group summary span flex-direction:column */
+.group .route-combination > summary .combination-top{display:flex;flex-direction:row;justify-content:space-between;align-items:center}
+.group .route-combination > summary .combination-times{display:grid;grid-template-columns:minmax(0,1fr) minmax(68px,.6fr) minmax(0,1fr);align-items:center;gap:clamp(6px,2vw,16px);width:100%}
+.group .route-combination > summary .combination-times > span{display:flex;flex-direction:column;min-width:0}
+.group .route-combination > summary .combination-times .combination-duration{align-items:center;text-align:center}
+.group .route-combination > summary .combination-times .combination-arrival{align-items:flex-end;text-align:right}
+.group .route-combination > summary .combination-expand{display:flex;flex-direction:row;justify-content:center;align-items:center}
+@media(min-width:700px){
+ .group .route-combination > summary{display:flex;flex-direction:column}
+ .group .route-combination > summary .combination-times{grid-template-columns:minmax(0,1fr) minmax(100px,.75fr) minmax(0,1fr)}
+}
