@@ -70,3 +70,8 @@
  .group .route-combination > summary{display:flex;flex-direction:column}
  .group .route-combination > summary .combination-times{grid-template-columns:minmax(0,1fr) minmax(100px,.75fr) minmax(0,1fr)}
 }
+
+/* v0.7.2: geolocation feedback stays with origin, not ride results */
+.location-feedback{display:block;margin-top:7px;font-size:.82rem;line-height:1.4;color:var(--muted);font-weight:500}
+.location-feedback.error{color:var(--danger,#b42318)}
+.location-feedback[hidden]{display:none}
