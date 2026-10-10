@@ -36,7 +36,7 @@ async function useLocation(){
      const c=name&&uf&&cityByName.get(norm(name+", "+uf));
      if(!c)throw new Error("Município não encontrado na lista de SP, MG, RJ e PR. Selecione a origem manualmente.");
      setCity($("#origin"),c);
-     locationFeedback("Origem definida como "+c.name+".");
+     locationFeedback("");
    }catch(e){locationFeedback(e.message||"Não foi possível identificar sua cidade.",true)}
    finally{reset()}
  },error=>{
