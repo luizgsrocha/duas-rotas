@@ -40,7 +40,12 @@ async function findRoutes(origin,target,date,originName,targetName,minWait,maxWa
    // Prioritize finishing a journey, but preserve a bounded search budget.
    const picked=proposals.filter(p=>p.next.slug===to.slug).concat(proposals.filter(p=>p.next.slug!==to.slug));
    const nextFrontier=[];
+   const depthBudget=Math.max(3,Math.floor(BRG_MAX_QUERIES/(maxTransfers+1)));
+   let depthQueries=0;
    for(const p of picked){
+     const pairKey=p.state.city.slug+"|"+p.next.slug;
+     if(!cache.has(pairKey)&&depthQueries>=depthBudget)continue;
+     if(!cache.has(pairKey))depthQueries++;
      if(queries>=BRG_MAX_QUERIES&&!cache.has(p.state.city.slug+"|"+p.next.slug))continue;
      const rides=await ridesBetween(p.state.city,p.next);
      for(const ride of rides){
