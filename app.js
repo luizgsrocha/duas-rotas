@@ -18,7 +18,24 @@ function setTheme(v){
 $$("[data-theme-value]").forEach(b=>b.addEventListener("click",()=>setTheme(b.dataset.themeValue)));
 applyTheme(theme);
 const shareUrl="https://caronaflow.lgsr96.workers.dev/";
-$("#share-copy").addEventListener("click",async()=>{const feedback=$("#share-feedback");try{if(!navigator.clipboard?.writeText)throw new Error("clipboard unavailable");await navigator.clipboard.writeText(shareUrl);feedback.textContent="Link copiado!";}catch{feedback.textContent="Não foi possível copiar automaticamente. Copie o endereço: "+shareUrl;}});
+$("#share-site").addEventListener("click",async()=>{
+  const feedback=$("#share-feedback");
+  feedback.textContent="";
+  const data={title:"Rua Nossa",text:"Conheça o Rua Nossa! Encontre caronas pelo Brasil.",url:shareUrl};
+  if(typeof navigator.share==="function"){
+    try{await navigator.share(data);return}
+    catch(error){
+      if(error?.name==="AbortError")return;
+    }
+  }
+  try{
+    if(typeof navigator.clipboard?.writeText!=="function")throw new Error("Clipboard indisponível");
+    await navigator.clipboard.writeText(shareUrl);
+    feedback.textContent="Link copiado!";
+  }catch{
+    feedback.textContent="Copie o endereço: "+shareUrl;
+  }
+});
 
 media.addEventListener?.("change",()=>{if(theme==="auto")applyTheme("auto")});
 $("#date").value=spDate(new Date());$("#openCalendar").addEventListener("click",()=>{const input=$("#date");try{if(typeof input.showPicker==="function"){input.showPicker();return}}catch{}input.focus();input.click()});$("#search").onclick=check;$("#sort").onchange=renderLastResults;$("#swap").onclick=swapRoute;$("#locate").onclick=useLocation;let cities=[],cityByName=new Map(),lastResults=null,lastDate="";loadCities();async function loadCities(){try{const r=await fetch("/api/cities"),data=await r.json();if(!r.ok||!Array.isArray(data))return;cities=data;cityByName=new Map(cities.map(c=>[norm(c.name),c]));$$(".city-input").forEach(input=>{bindCity(input);input._refreshCities?.()})}catch{}}function bindCity(input){if(input.dataset.cityBound)return;input.dataset.cityBound="1";const box=input.closest(".city-combobox"),list=box.querySelector(".city-options");let active=-1;function close(){list.hidden=true;input.setAttribute("aria-expanded","false");active=-1;input.removeAttribute("aria-activedescendant")}function draw(){const q=norm(input.value),matches=(q?cities.filter(c=>norm(c.name).includes(q)):cities).slice(0,40);list.replaceChildren();active=-1;if(!matches.length){const empty=document.createElement("div");empty.className="city-empty";empty.textContent=cities.length?"Nenhuma cidade encontrada.":"Carregando cidades…";list.append(empty)}else matches.forEach((c,i)=>{const option=document.createElement("button");option.type="button";option.className="city-option";option.id=input.id+"-option-"+i;option.setAttribute("role","option");option.setAttribute("aria-selected",String(norm(input.value)===norm(c.name)));option.textContent=c.name;option.addEventListener("pointerdown",e=>e.preventDefault());option.addEventListener("click",()=>{setCity(input,c);close();input.focus()});list.append(option)});list.hidden=false;input.setAttribute("aria-expanded","true")}function move(n){const opts=[...list.querySelectorAll(".city-option")];if(!opts.length)return;active=(active+n+opts.length)%opts.length;opts.forEach((o,i)=>o.classList.toggle("highlighted",i===active));input.setAttribute("aria-activedescendant",opts[active].id);opts[active].scrollIntoView({block:"nearest"})}input.addEventListener("focus",draw);input.addEventListener("input",()=>{const c=cityByName.get(norm(input.value));input.dataset.slug=c?c.slug:"";draw()});input.addEventListener("keydown",e=>{if(e.key==="Escape"){close();return}if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();if(list.hidden)draw();move(e.key==="ArrowDown"?1:-1)}if(e.key==="Enter"&&!list.hidden&&active>=0){e.preventDefault();list.querySelectorAll(".city-option")[active]?.click()}if(e.key==="Tab")close()});input.addEventListener("blur",()=>setTimeout(()=>{if(!box.contains(document.activeElement))close()},100));document.addEventListener("pointerdown",e=>{if(!box.contains(e.target))close()});input.addEventListener("change",()=>{const c=cityByName.get(norm(input.value));input.dataset.slug=c?c.slug:""});input._refreshCities=()=>{if(document.activeElement===input)draw()}}function setCity(input,c){input.value=c.name;input.dataset.slug=c.slug}function swapRoute(){const origin=$("#origin"),dest=$(".destination"),a=selectedCity(origin),b=selectedCity(dest);if(!a||!b){$("#status").textContent="Escolha uma origem e um destino válidos antes de inverter.";return}setCity(origin,b);setCity(dest,a)}function locationFeedback(message,error=false){const el=$("#location-feedback");el.textContent=message;el.hidden=!message;el.classList.toggle("error",error)}
