@@ -78,3 +78,18 @@
 
 /* Site sharing in header */
 .site-share{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;margin-top:10px}.site-share button{font:inherit;font-size:.78rem;font-weight:650;text-decoration:none;color:var(--accent);background:var(--card);border:1px solid var(--border);border-radius:9px;padding:8px 10px;cursor:pointer;white-space:nowrap}.site-share button:hover{background:var(--linkbg)}.share-feedback{display:block;max-width:220px;text-align:right;color:var(--muted);font-size:.76rem;overflow-wrap:anywhere}.share-feedback:empty{display:none}@media(max-width:650px){.site-share{max-width:175px}.site-share button{font-size:.74rem;padding:7px 8px}}
+
+/* v0.8.4: responsive header: keep description full width */
+.header-description{margin:14px 0 0;color:var(--muted);font-size:1.02rem;line-height:1.5;max-width:76ch}
+.top .brand{min-width:0;flex:1 1 auto}
+.top .theme{flex:0 0 auto}
+.top .site-share{flex:0 0 auto}
+@media(max-width:650px){
+ .top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 12px;align-items:center}
+ .top .brand{grid-column:1;grid-row:1;min-width:0}
+ .top .brand .logo{width:min(100%,150px);height:auto}
+ .top .theme{grid-column:2;grid-row:1;align-items:flex-end}
+ .top .theme-toggle button{width:34px;height:34px}
+ .top .site-share{grid-column:1 / -1;grid-row:2;justify-content:flex-end;margin-top:0}
+ .header-description{margin-top:14px;font-size:1rem;line-height:1.55}
+}
