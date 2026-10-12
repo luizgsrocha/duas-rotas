@@ -93,3 +93,15 @@
  .top .site-share{grid-column:1 / -1;grid-row:2;justify-content:flex-end;margin-top:0}
  .header-description{margin-top:14px;font-size:1rem;line-height:1.55}
 }
+
+/* v0.8.5: compact header order: logo/theme, description, share */
+header>.site-share{margin-top:8px;justify-content:flex-end}
+header>.site-share .share-feedback{max-width:100%}
+@media(max-width:650px){
+ header{margin-bottom:16px}
+ .top{gap:8px 10px;align-items:center}
+ .top .brand .logo{width:min(100%,138px);height:auto;display:block}
+ .header-description{margin:8px 0 0;font-size:.94rem;line-height:1.45}
+ header>.site-share{margin-top:8px}
+ header>.site-share button{padding:7px 10px}
+}
