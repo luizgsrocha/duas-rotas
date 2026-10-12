@@ -34,7 +34,7 @@ async function useLocation(){
      const d=await r.json(),name=d.address?.city||d.address?.town||d.address?.municipality||d.address?.village;
      const iso=d.address?.["ISO3166-2-lvl4"]||d.address?.["ISO3166-2-lvl6"]||"",uf=(iso.match(/BR-([A-Z]{2})$/)||[])[1]||"";
      const c=name&&uf&&cityByName.get(norm(name+", "+uf));
-     if(!c)throw new Error("Município não encontrado na lista de SP, MG, RJ, PR, ES, SC, RS e BA. Selecione a origem manualmente.");
+     if(!c)throw new Error("Município não encontrado na lista de todo o Brasil (26 estados e DF). Selecione a origem manualmente.");
      setCity($("#origin"),c);
      locationFeedback("");
    }catch(e){locationFeedback(e.message||"Não foi possível identificar sua cidade.",true)}
