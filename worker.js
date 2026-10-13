@@ -32,7 +32,7 @@ async function findRoutes(origin,target,date,originName,targetName,minWait,maxWa
        const legDistance=distance(state.city,next);
        const newLength=state.length+legDistance;
        // Total travel distance must remain within a bounded detour.
-       if(newLength+distance(next,to)>directDistance*1.65+35)continue;
+       if(newLength+distance(next,to)>directDistance+Math.max(350,directDistance*.65))continue;
        // All non-final legs must leave room for a later connection.
        if(next.slug!==to.slug&&depth===maxTransfers)continue;
        proposals.push({state,next,newLength,score:(newLength+distance(next,to))/directDistance+depth*.08});
@@ -89,7 +89,7 @@ function selectBrgHubs(cities,from,to){
    const first=distance(from,city),second=distance(city,to);
    const detour=first+second-direct,ratio=(first+second)/direct;
    return {city,first,detour,ratio,priority:HUB_SLUGS.has(city.slug)};
- }).filter(x=>x.first>5&&distance(x.city,to)>5&&x.ratio<=1.65&&x.detour<=Math.max(65,direct*.65));
+ }).filter(x=>x.first>5&&distance(x.city,to)>5&&x.detour<=Math.max(350,direct*.65));
  const fixed=candidates.filter(x=>x.priority).sort((a,b)=>a.ratio-b.ratio||a.city.slug.localeCompare(b.city.slug));
  const dynamic=candidates.filter(x=>!x.priority).sort((a,b)=>a.ratio-b.ratio||a.city.slug.localeCompare(b.city.slug));
  const selected=[];
