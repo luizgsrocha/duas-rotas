@@ -1,0 +1,47 @@
+name: Rua Nossa - verificacoes iniciais
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validar sintaxe JavaScript
+        run: |
+          node --check app.js
+          node --check worker.js
+      - name: Verificar estrutura dos agentes e municípios
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const manuals = fs.readdirSync('docs/agents');
+          for (let i=1;i<=8;i++) {
+            const prefix=String(i).padStart(2,'0')+'-';
+            if (manuals.filter(x=>x.startsWith(prefix)&&x.endsWith('.md')).length!==1)
+              throw Error('Manual ausente ou duplicado: '+prefix);
+          }
+          const cities=JSON.parse(fs.readFileSync('cities.json','utf8'));
+          if (!Array.isArray(cities) || cities.length < 5500)
+            throw Error('Lista de municípios inesperada');
+          console.log('Manuais OK; municípios:',cities.length);
+          NODE
+      - name: Verificar contratos básicos do cabeçalho
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const html=fs.readFileSync('index.html','utf8');
+          const js=fs.readFileSync('app.js','utf8');
+          if (!html.includes('id="share-site"') || !js.includes('navigator.share'))
+            throw Error('Compartilhamento nativo ausente');
+          if (!html.includes('class="header-description"'))
+            throw Error('Descrição do cabeçalho ausente');
+          console.log('Contratos básicos OK');
+          NODE
