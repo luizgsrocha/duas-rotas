@@ -82,7 +82,12 @@ async function findRoutes(origin,target,date,originName,targetName,minWait,maxWa
    if(routes.length>=BRG_MAX_RESULTS)break;
    nextFrontier.sort((a,b)=>(a.length+distance(a.city,to))/directDistance+a.legs.length*.08-(b.length+distance(b.city,to))/directDistance-b.legs.length*.08);
    const unique=new Set();
-   frontier=nextFrontier.filter(s=>{const key=s.city.slug+"|"+s.arrival+"|"+s.legs.length;if(unique.has(key))return false;unique.add(key);return true}).slice(0,BRG_BEAM_WIDTH);
+   const candidates=nextFrontier.filter(s=>{const key=s.city.slug+"|"+s.arrival+"|"+s.legs.length;if(unique.has(key))return false;unique.add(key);return true});
+   const byCity=new Map();
+   for(const state of candidates){if(!byCity.has(state.city.slug))byCity.set(state.city.slug,[]);byCity.get(state.city.slug).push(state)}
+   frontier=[];
+   // Reserve room for each hub before taking additional departures from one city.
+   while(frontier.length<BRG_BEAM_WIDTH){let added=false;for(const states of byCity.values()){if(!states.length)continue;frontier.push(states.shift());added=true;if(frontier.length===BRG_BEAM_WIDTH)break}if(!added)break}
  }
  return{routes,incomplete};
 }
