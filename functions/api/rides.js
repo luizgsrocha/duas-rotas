@@ -12,7 +12,7 @@ export async function onRequestGet({request}){
 }
 async function fetchRoute(from,to,date){
  const url=`https://www.blablacar.com.br/ride-sharing/${SLUG[from]}/${SLUG[to]}`;
- const res=await fetch(url,{headers:{"Accept":"text/html","Accept-Language":"pt-BR,pt;q=0.9","User-Agent":"Mozilla/5.0 (compatible; CaronaFlow/1.0)"}});
+ const res=await fetch(url,{headers:{"Accept":"text/html","Accept-Language":"pt-BR,pt;q=0.9","User-Agent":"Mozilla/5.0 (compatible; RuaNossa/1.0)"}});
  if(!res.ok)return[];
  const html=await res.text();
  return parse(html,from,to,date,url);
