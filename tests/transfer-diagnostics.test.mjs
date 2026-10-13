@@ -13,7 +13,8 @@ const cities=[
 function run(pages,maxTransfers=2){
  const queried=[];
  const context={URL,Headers,Response,AbortController,setTimeout,clearTimeout,Date,console,fetch:async url=>{
-  const u=new URL(url),match=u.pathname.match(/\\/horario\\/([^/]+)\\/([^/]+)/);
+  const u=new URL(url),parts=u.pathname.split("/");
+  const match=parts[1]==="horario"&&parts.length>=4?[null,parts[2],parts[3]]:null;
   assert.ok(match,'Unexpected request '+url);
   const pair=match[1]+'|'+match[2];queried.push(pair);
   const rides=pages[pair]||[];
