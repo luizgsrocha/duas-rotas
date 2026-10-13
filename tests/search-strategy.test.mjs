@@ -19,19 +19,19 @@ const cities=[
  {slug:'missing-coordinates'},
 ];
 test('reference journey and reverse direction remain short',()=>{
- assert.equal(context.classifySearchStrategy(cities,'taubate','ribeirao-preto'),'short');
- assert.equal(context.classifySearchStrategy(cities,'ribeirao-preto','taubate'),'short');
+ assert.equal(context.classifySearchStrategy(cities,'taubate','ribeirao-preto'),'RN-CUR');
+ assert.equal(context.classifySearchStrategy(cities,'ribeirao-preto','taubate'),'RN-CUR');
 });
 test('shorter journeys use BRG; Brasília uses geographic selector',()=>{
- assert.equal(context.classifySearchStrategy(cities,'taubate','campinas'),'short');
- assert.equal(context.classifySearchStrategy(cities,'taubate','brasilia'),'long');
+ assert.equal(context.classifySearchStrategy(cities,'taubate','campinas'),'RN-CUR');
+ assert.equal(context.classifySearchStrategy(cities,'taubate','brasilia'),'RN-LON');
 });
 test('missing coordinates never silently select a strategy',()=>{
- assert.equal(context.classifySearchStrategy(cities,'taubate','missing-coordinates'),'short');
+ assert.equal(context.classifySearchStrategy(cities,'taubate','missing-coordinates'),'RN-CUR');
 });
 test('geographic selector is still bounded by the existing 90 km cap',()=>{
  const hubs=context.selectHubs(cities,cities[0],cities[2]);
  assert.ok(Array.isArray(hubs));
- assert.ok(source.includes('strategy==="long"?selectHubs(geo,from,to):selectBrgHubs(geo,from,to)'));
- assert.ok(source.includes('strategy==="long"?Math.min(90,Math.max(15,directDistance*.18)):60'));
+ assert.ok(source.includes('strategy==="RN-LON"?selectHubs(geo,from,to):selectBrgHubs(geo,from,to)'));
+ assert.ok(source.includes('strategy==="RN-LON"?Math.min(90,Math.max(15,directDistance*.18)):60'));
 });
