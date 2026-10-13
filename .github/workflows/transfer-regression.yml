@@ -1,0 +1,1 @@
+name: Transfer regression\non:\n  push:\n    branches: [main]\n  pull_request:\n    branches: [main]\npermissions:\n  contents: read\njobs:\n  transfer-tests:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: node --test tests/transfer-search.test.cjs\n
