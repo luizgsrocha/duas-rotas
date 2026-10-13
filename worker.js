@@ -1,34 +1,37 @@
 const CITIES={pirassununga:{name:"Pirassununga",slug:"pirassununga",lat:-21.996,lng:-47.426},taubate:{name:"Taubaté",slug:"taubate",lat:-23.026,lng:-45.555},"sao-jose-dos-campos":{name:"São José dos Campos",slug:"sao-jose-dos-campos",lat:-23.189,lng:-45.884},campinas:{name:"Campinas",slug:"campinas",lat:-22.906,lng:-47.061}};
 const DEFAULT_MIN_WAIT=5,DEFAULT_MAX_WAIT=60,DEFAULT_MAX_TRANSFERS=2,MAX_TRANSFERS=10;
-export default{async fetch(request,env){const u=new URL(request.url);if(u.pathname==="/api/blablacar-lab")return blablacarLab(request,env);if(u.pathname==="/api/blablacar-trip-lab")return blablacarTripLab(request);if(u.pathname==="/api/cities"){try{const data=await loadLocalCities(env,request);return json(data.map(({name,slug,uf})=>({name,slug,uf})))}catch(e){return json({error:"Falha ao carregar municípios"},502)}}if(u.pathname!=="/api/exists"){const r=await env.ASSETS.fetch(request),h=new Headers(r.headers);if(u.pathname==="/"||u.pathname.endsWith(".html"))h.set("Cache-Control","no-cache, no-store, must-revalidate");else if(u.pathname.endsWith(".js")||u.pathname.endsWith(".css"))h.set("Cache-Control","public, max-age=0, must-revalidate");return new Response(r.body,{status:r.status,statusText:r.statusText,headers:h})}try{const date=u.searchParams.get("date"),origin=u.searchParams.get("origin")||"pirassununga",key=u.searchParams.get("destination")||"taubate",originName=u.searchParams.get("originName")||displayName(origin),destinationName=u.searchParams.get("destinationName")||displayName(key),minWait=parseWait(u.searchParams.get("minWait"),DEFAULT_MIN_WAIT),maxWait=parseWait(u.searchParams.get("maxWait"),DEFAULT_MAX_WAIT),maxTransfers=parseWait(u.searchParams.get("maxTransfers"),DEFAULT_MAX_TRANSFERS);if(minWait<0||maxWait<minWait||maxWait>720)return json({error:"Intervalo de espera inválido"},400);if(maxTransfers<0||maxTransfers>MAX_TRANSFERS)return json({error:"Quantidade máxima de baldeações inválida"},400);if(!/^\d{4}-\d{2}-\d{2}$/.test(date||""))return json({error:"Data inválida"},400);if(!validSlug(origin)||!validSlug(key))return json({error:"Cidade inválida"},400);if(origin===key)return json({error:"Origem e destino devem ser diferentes"},400);const mode=u.searchParams.get("mode")||"all";if(!["all","direct","transfers"].includes(mode))return json({error:"Modo inválido"},400);let routes;const geo=await loadLocalCities(env,request);if(mode==="direct"||maxTransfers===0){const rides=await getDirectRides(origin,key,date,fromBuscaSlug(geo,origin),fromBuscaSlug(geo,key));routes=rides.map(ride=>makeRoute([{from:origin,to:key,fromName:originName,toName:destinationName,ride}]));if(mode==="transfers")routes=[]}else{routes=await findRoutes(origin,key,date,originName,destinationName,minWait,maxWait,maxTransfers,geo);if(mode==="transfers")routes=routes.filter(x=>x.legs.length>1)}const direct=routes.filter(x=>x.legs.length===1),transfers=routes.filter(x=>x.legs.length>1);return json({date,origin,originName,destination:key,destinationName,mode,exists:routes.length>0,count:routes.length,directCount:direct.length,transferCount:transfers.length,source:"BuscaOnibus",routes})}catch(e){if(e.name==="SearchTimeoutError")return json({error:e.message,code:"SEARCH_TIMEOUT"},504);if(e.name==="SourceUnavailableError")return json({error:e.message,code:"SOURCE_UNAVAILABLE"},502);return json({error:"Falha ao consultar as caronas",detail:String(e&&e.message||e)},502)}}};
+export default{async fetch(request,env){const u=new URL(request.url);if(u.pathname==="/api/blablacar-lab")return blablacarLab(request,env);if(u.pathname==="/api/blablacar-trip-lab")return blablacarTripLab(request);if(u.pathname==="/api/cities"){try{const data=await loadLocalCities(env,request);return json(data.map(({name,slug,uf})=>({name,slug,uf})))}catch(e){return json({error:"Falha ao carregar municípios"},502)}}if(u.pathname!=="/api/exists"){const r=await env.ASSETS.fetch(request),h=new Headers(r.headers);if(u.pathname==="/"||u.pathname.endsWith(".html"))h.set("Cache-Control","no-cache, no-store, must-revalidate");else if(u.pathname.endsWith(".js")||u.pathname.endsWith(".css"))h.set("Cache-Control","public, max-age=0, must-revalidate");return new Response(r.body,{status:r.status,statusText:r.statusText,headers:h})}try{const date=u.searchParams.get("date"),origin=u.searchParams.get("origin")||"pirassununga",key=u.searchParams.get("destination")||"taubate",originName=u.searchParams.get("originName")||displayName(origin),destinationName=u.searchParams.get("destinationName")||displayName(key),minWait=parseWait(u.searchParams.get("minWait"),DEFAULT_MIN_WAIT),maxWait=parseWait(u.searchParams.get("maxWait"),DEFAULT_MAX_WAIT),maxTransfers=parseWait(u.searchParams.get("maxTransfers"),DEFAULT_MAX_TRANSFERS);if(minWait<0||maxWait<minWait||maxWait>720)return json({error:"Intervalo de espera inválido"},400);if(maxTransfers<0||maxTransfers>MAX_TRANSFERS)return json({error:"Quantidade máxima de baldeações inválida"},400);if(!/^\d{4}-\d{2}-\d{2}$/.test(date||""))return json({error:"Data inválida"},400);if(!validSlug(origin)||!validSlug(key))return json({error:"Cidade inválida"},400);if(origin===key)return json({error:"Origem e destino devem ser diferentes"},400);const mode=u.searchParams.get("mode")||"all";if(!["all","direct","transfers"].includes(mode))return json({error:"Modo inválido"},400);let routes,incomplete=false;const geo=await loadLocalCities(env,request);if(mode==="direct"||maxTransfers===0){const rides=await getDirectRides(origin,key,date,fromBuscaSlug(geo,origin),fromBuscaSlug(geo,key));routes=rides.map(ride=>makeRoute([{from:origin,to:key,fromName:originName,toName:destinationName,ride}]));if(mode==="transfers")routes=[]}else{const search=await findRoutes(origin,key,date,originName,destinationName,minWait,maxWait,maxTransfers,geo,mode!=="transfers");routes=search.routes;incomplete=search.incomplete;if(mode==="transfers")routes=routes.filter(x=>x.legs.length>1)}const direct=routes.filter(x=>x.legs.length===1),transfers=routes.filter(x=>x.legs.length>1);return json({date,origin,originName,destination:key,destinationName,mode,exists:routes.length>0,count:routes.length,directCount:direct.length,transferCount:transfers.length,source:"BuscaOnibus",incomplete,warning:incomplete?"Alguns trechos não puderam ser consultados. Os resultados podem estar incompletos.":null,routes})}catch(e){if(e.name==="SearchTimeoutError")return json({error:e.message,code:"SEARCH_TIMEOUT"},504);if(e.name==="SourceUnavailableError")return json({error:e.message,code:"SOURCE_UNAVAILABLE"},502);return json({error:"Falha ao consultar as caronas",detail:String(e&&e.message||e)},502)}}};
 // BRG v0.7.1: bounded, time-aware graph search with fixed and geographic hubs.
 const HUB_SLUGS=new Set(["sao-paulo","campinas","sao-jose-dos-campos","sorocaba","ribeirao-preto","jundiai","piracicaba","bauru","sao-jose-do-rio-preto","araraquara","limeira","americana","belo-horizonte","uberlandia","juiz-de-fora","pocos-de-caldas","rio-de-janeiro","niteroi","volta-redonda","curitiba","londrina","maringa","ponta-grossa","cascavel"]);
 const BRG_BEAM_WIDTH=12,BRG_MAX_HUBS=10,BRG_MAX_QUERIES=55,BRG_MAX_RESULTS=80;
-async function findRoutes(origin,target,date,originName,targetName,minWait,maxWait,maxTransfers,geo){
- const deadline=Date.now()+180000;
- const direct=await getRides(origin,target,date,fromBuscaSlug(geo,origin),fromBuscaSlug(geo,target),deadline);
+async function findRoutes(origin,target,date,originName,targetName,minWait,maxWait,maxTransfers,geo,includeDirect=true){
+ const deadline=Date.now()+300000;
+ const direct=includeDirect?await getDirectRides(origin,target,date,fromBuscaSlug(geo,origin),fromBuscaSlug(geo,target),deadline):[];
  const routes=direct.map(ride=>makeRoute([{from:origin,to:target,fromName:originName,toName:targetName,ride}]));
  const from=geo.find(c=>c.slug===origin),to=geo.find(c=>c.slug===target);
- if(!from||!to)return routes;
+ if(!from||!to)return{routes,incomplete:false};
  const hubs=selectBrgHubs(geo,from,to),nodes=[...hubs,to],cache=new Map(),seenRoutes=new Set();
- let queries=0,frontier=[{city:from,legs:[],visited:new Set([from.slug]),length:0,arrival:-1}];
+ let incomplete=false,queries=0,frontier=[{city:from,legs:[],visited:new Set([from.slug]),length:0,arrival:-1}];
  const directDistance=Math.max(1,distance(from,to));
  async function ridesBetween(a,b){
    const key=a.slug+"|"+b.slug;
    if(cache.has(key))return cache.get(key);
    if(queries>=BRG_MAX_QUERIES)return [];
    queries++;
-   const result=await getRides(a.slug,b.slug,date,a.buscaOnibusSlug||a.slug,b.buscaOnibusSlug||b.slug,deadline);
+   let result;
+   try{result=await getDirectRides(a.slug,b.slug,date,a.buscaOnibusSlug||a.slug,b.buscaOnibusSlug||b.slug,deadline)}
+   catch(error){if(!["SourceUnavailableError","SearchTimeoutError"].includes(error.name))throw error;incomplete=true;result=[]}
    cache.set(key,result);
    return result;
  }
  // Each depth is one ride. At most maxTransfers+1 rides are allowed.
  for(let depth=0;depth<maxTransfers+1&&frontier.length;depth++){
-   if(Date.now()>=deadline)throw searchTimeout();
+   if(Date.now()>=deadline)return{routes,incomplete:true};
    const proposals=[];
    for(const state of frontier){
      for(const next of nodes){
        if(state.visited.has(next.slug))continue;
+       if(!state.legs.length&&next.slug===to.slug)continue; // Direct search is handled separately.
        const legDistance=distance(state.city,next);
        const newLength=state.length+legDistance;
        // Total travel distance must remain within a bounded detour.
@@ -38,14 +41,14 @@ async function findRoutes(origin,target,date,originName,targetName,minWait,maxWa
        proposals.push({state,next,newLength,score:(newLength+distance(next,to))/directDistance+depth*.08});
      }
    }
-   proposals.sort((a,b)=>a.score-b.score);
+   proposals.sort((a,b)=>Number(HUB_SLUGS.has(b.next.slug))-Number(HUB_SLUGS.has(a.next.slug))||a.score-b.score);
    // Prioritize finishing a journey, but preserve a bounded search budget.
    const picked=proposals.filter(p=>p.next.slug===to.slug).concat(proposals.filter(p=>p.next.slug!==to.slug));
    const nextFrontier=[];
    const depthBudget=Math.max(3,Math.floor(BRG_MAX_QUERIES/(maxTransfers+1)));
    let depthQueries=0;
    for(const p of picked){
-     if(Date.now()>=deadline)throw searchTimeout();
+     if(Date.now()>=deadline)return{routes,incomplete:true};
      const pairKey=p.state.city.slug+"|"+p.next.slug;
      if(!cache.has(pairKey)&&depthQueries>=depthBudget)continue;
      if(!cache.has(pairKey))depthQueries++;
@@ -81,7 +84,7 @@ async function findRoutes(origin,target,date,originName,targetName,minWait,maxWa
    const unique=new Set();
    frontier=nextFrontier.filter(s=>{const key=s.city.slug+"|"+s.arrival+"|"+s.legs.length;if(unique.has(key))return false;unique.add(key);return true}).slice(0,BRG_BEAM_WIDTH);
  }
- return routes;
+ return{routes,incomplete};
 }
 function selectBrgHubs(cities,from,to){
  const direct=Math.max(1,distance(from,to));
