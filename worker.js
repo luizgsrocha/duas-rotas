@@ -31,6 +31,7 @@ async function findRoutes(origin,target,date,originName,targetName,minWait,maxWa
    for(const state of frontier){
      for(const next of nodes){
        if(state.visited.has(next.slug))continue;
+       if(!state.legs.length&&next.slug===to.slug)continue; // Direct search is handled separately.
        const legDistance=distance(state.city,next);
        const newLength=state.length+legDistance;
        // Total travel distance must remain within a bounded detour.
