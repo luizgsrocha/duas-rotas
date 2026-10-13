@@ -1,17 +1,24 @@
 # Rua Nossa
 
-Planejador de caronas para **Pirassununga → Taubaté**, priorizando viagem direta e montando baldeações por **Campinas** e **São José dos Campos** quando necessário.
+Planejador de caronas pelo Brasil, com busca de viagens diretas e combinações com baldeações.
 
-## MVP
-- Prioriza rota direta.
-- Aceita até 2 baldeações.
-- Margem mínima de conexão configurável.
-- Ordenação por recomendação, duração ou preço.
-- Interface responsiva e estática, adequada para Cloudflare Pages.
-- Motor de rotas separado da fonte de dados.
+## Repositório
+https://github.com/luizgsrocha/rua-nossa
 
-## Estado atual
-A interface e o algoritmo já funcionam com dados demonstrativos. A próxima etapa é implementar um adaptador de dados para obter ofertas reais de uma fonte permitida/estável (por exemplo, integração oficial quando disponível), sem acoplar o algoritmo ao HTML de terceiros.
+## Funcionamento
+- Seleção de municípios dos 26 estados e do Distrito Federal.
+- Busca de ofertas da BlaBlaCar exibidas pelo BuscaOnibus.
+- Filtros de espera e quantidade máxima de baldeações.
+- Ordenação por duração, preço e quantidade de baldeações.
+- Interface responsiva, temas claro e escuro e compartilhamento.
+- Projeto independente, sem vínculo ou parceria com a BlaBlaCar.
+
+A busca de conexões usa candidatos geográficos e limites de consultas; não garante encontrar todas as combinações possíveis. Consultas externas têm limite de tempo e erros de disponibilidade são informados.
 
 ## Publicação
-Cloudflare Pages pode publicar diretamente a raiz do repositório, sem etapa de build.
+Cloudflare Workers Builds acompanha a branch `main` deste repositório e executa `npx wrangler deploy`.
+
+O Worker mantém o nome técnico `caronaflow`, configurado em `wrangler.toml`, para preservar o endereço público:
+https://caronaflow.lgsr96.workers.dev/
+
+Renomear o repositório para `rua-nossa` não altera esse endereço. A conexão do repositório no Cloudflare foi atualizada para o novo nome.
