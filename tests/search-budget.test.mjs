@@ -20,7 +20,7 @@ test('orçamento de consultas limitado sinaliza pesquisa incompleta', async () =
   const makeFindRoutes = new Function(
     'getDirectRides', 'fromBuscaSlug', 'selectBrgHubs', 'distance', 'HUB_SLUGS',
     'BRG_MAX_QUERIES', 'BRG_MAX_RESULTS', 'BRG_BEAM_WIDTH', 'minutes', 'makeRoute',
-    'return (' + findRoutesSource.replace(/^async function findRoutes/, 'async function findRoutes') + '\nfindRoutes)'
+    'return ( ' + findRoutesSource + '\n )'
   );
   const findRoutes = makeFindRoutes(
     async () => { calls++; return []; },
