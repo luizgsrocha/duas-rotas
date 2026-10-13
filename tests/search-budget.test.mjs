@@ -23,12 +23,12 @@ test('orçamento de consultas limitado sinaliza pesquisa incompleta', async () =
     'return ( ' + findRoutesSource + '\n )'
   );
   const findRoutes = makeFindRoutes(
-    async () => { calls++; return []; },
+    async () => { calls++; return [{ departure: '08:00', arrival: '08:30', price: '0' }]; },
     (_, slug) => slug,
     (geo) => geo.slice(2),
     (a, b) => Math.abs(a.lng - b.lng) * 100,
     new Set(), 55, 80, 12,
-    () => 0, (legs) => ({ legs })
+    (time) => Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5)), (legs) => ({ legs })
   );
   const result = await findRoutes('origem', 'destino', '2026-10-14', 'Origem', 'Destino', 5, 60, 2, cities, false);
   assert.equal(result.incomplete, true);
