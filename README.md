@@ -18,7 +18,7 @@ A busca de conexões usa candidatos geográficos e limites de consultas; não ga
 ## Publicação
 Cloudflare Workers Builds acompanha a branch `main` deste repositório e executa `npx wrangler deploy`.
 
-O Worker mantém o nome técnico `caronaflow`, configurado em `wrangler.toml`, para preservar o endereço público:
-https://caronaflow.lgsr96.workers.dev/
+O Worker usa o nome `rua-nossa`, configurado em `wrangler.toml`, com o endereço público:
+https://rua-nossa.lgsr96.workers.dev/
 
-Renomear o repositório para `rua-nossa` não altera esse endereço. A conexão do repositório no Cloudflare foi atualizada para o novo nome.
+O repositório e o Worker estão alinhados ao nome `rua-nossa`. Cloudflare Workers Builds publica automaticamente as alterações da branch `main`.

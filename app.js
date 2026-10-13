@@ -17,7 +17,7 @@ function setTheme(v){
 }
 $$("[data-theme-value]").forEach(b=>b.addEventListener("click",()=>setTheme(b.dataset.themeValue)));
 applyTheme(theme);
-const shareUrl="https://caronaflow.lgsr96.workers.dev/";
+const shareUrl="https://rua-nossa.lgsr96.workers.dev/";
 $("#share-site").addEventListener("click",async()=>{
   const feedback=$("#share-feedback");
   feedback.textContent="";
