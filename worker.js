@@ -16,7 +16,7 @@ async function findRoutes(origin,target,date,originName,targetName,minWait,maxWa
  async function ridesBetween(a,b){
    const key=a.slug+"|"+b.slug;
    if(cache.has(key))return cache.get(key);
-   if(queries>=BRG_MAX_QUERIES)return [];
+   if(queries>=BRG_MAX_QUERIES){incomplete=true;return [];}
    queries++;
    let result;
    try{result=await getDirectRides(a.slug,b.slug,date,a.buscaOnibusSlug||a.slug,b.buscaOnibusSlug||b.slug,deadline)}
@@ -50,9 +50,9 @@ async function findRoutes(origin,target,date,originName,targetName,minWait,maxWa
    for(const p of picked){
      if(Date.now()>=deadline)return{routes,incomplete:true};
      const pairKey=p.state.city.slug+"|"+p.next.slug;
-     if(!cache.has(pairKey)&&depthQueries>=depthBudget)continue;
+     if(!cache.has(pairKey)&&depthQueries>=depthBudget){incomplete=true;continue;}
      if(!cache.has(pairKey))depthQueries++;
-     if(queries>=BRG_MAX_QUERIES&&!cache.has(p.state.city.slug+"|"+p.next.slug))continue;
+     if(queries>=BRG_MAX_QUERIES&&!cache.has(pairKey)){incomplete=true;continue;}
      const rides=await ridesBetween(p.state.city,p.next);
      for(const ride of rides){
        const departure=minutes(ride.departure),arrival=minutes(ride.arrival);
