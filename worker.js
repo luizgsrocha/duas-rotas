@@ -64,7 +64,10 @@ async function findRoutes(origin,target,date,originName,targetName,minWait,maxWa
          if(!seenRoutes.has(key)){seenRoutes.add(key);routes.push(makeRoute(legs))}
        }else{
          const visited=new Set(p.state.visited);visited.add(p.next.slug);
-         nextFrontier.push({city:p.next,legs,visited,length:p.newLength,arrival});
+         // Every departure belongs to the requested date. An overnight arrival
+         // is on the following day and cannot connect to another same-date ride.
+         const arrivalOnSearchDate=arrival+(arrival<departure?1440:0);
+         nextFrontier.push({city:p.next,legs,visited,length:p.newLength,arrival:arrivalOnSearchDate});
        }
        if(routes.length>=BRG_MAX_RESULTS)break;
      }
