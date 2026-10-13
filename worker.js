@@ -43,7 +43,20 @@ async function findRoutes(origin,target,date,originName,targetName,minWait,maxWa
    }
    proposals.sort((a,b)=>Number(HUB_SLUGS.has(b.next.slug))-Number(HUB_SLUGS.has(a.next.slug))||a.score-b.score);
    // Prioritize finishing a journey, but preserve a bounded search budget.
-   const picked=proposals.filter(p=>p.next.slug===to.slug).concat(proposals.filter(p=>p.next.slug!==to.slug));
+   // Fair scheduling: inspect at least one destination connection per arrival city
+    // before spending the per-depth budget on many departures from one hub.
+    const finishes=proposals.filter(p=>p.next.slug===to.slug);
+    const byOrigin=new Map();
+    for(const p of finishes){
+      const key=p.state.city.slug;
+      if(!byOrigin.has(key))byOrigin.set(key,[]);
+      byOrigin.get(key).push(p);
+    }
+    const fairFinishes=[];
+    while([...byOrigin.values()].some(list=>list.length)){
+      for(const list of byOrigin.values())if(list.length)fairFinishes.push(list.shift());
+    }
+    const picked=fairFinishes.concat(proposals.filter(p=>p.next.slug!==to.slug));
    const nextFrontier=[];
    const depthBudget=Math.max(3,Math.floor(BRG_MAX_QUERIES/(maxTransfers+1)));
    let depthQueries=0;
