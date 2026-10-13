@@ -5,7 +5,7 @@ export default{async fetch(request,env){const u=new URL(request.url);if(u.pathna
 const HUB_SLUGS=new Set(["sao-paulo","campinas","sao-jose-dos-campos","sorocaba","ribeirao-preto","jundiai","piracicaba","bauru","sao-jose-do-rio-preto","araraquara","limeira","americana","belo-horizonte","uberlandia","juiz-de-fora","pocos-de-caldas","rio-de-janeiro","niteroi","volta-redonda","curitiba","londrina","maringa","ponta-grossa","cascavel"]);
 const BRG_BEAM_WIDTH=12,BRG_MAX_HUBS=10,BRG_MAX_QUERIES=55,BRG_MAX_RESULTS=80;
 async function findRoutes(origin,target,date,originName,targetName,minWait,maxWait,maxTransfers,geo){
- const deadline=Date.now()+30000;
+ const deadline=Date.now()+180000;
  const direct=await getRides(origin,target,date,fromBuscaSlug(geo,origin),fromBuscaSlug(geo,target),deadline);
  const routes=direct.map(ride=>makeRoute([{from:origin,to:target,fromName:originName,toName:targetName,ride}]));
  const from=geo.find(c=>c.slug===origin),to=geo.find(c=>c.slug===target);
@@ -139,7 +139,7 @@ function fromBuscaSlug(cities,slug){const c=cities.find(x=>x.slug===slug);return
 function sourceUnavailable(){const error=new Error("A fonte de caronas está indisponível. Tente novamente em alguns instantes.");error.name="SourceUnavailableError";return error}
 function searchTimeout(){const error=new Error("A consulta demorou demais. Tente novamente.");error.name="SearchTimeoutError";return error}
 async function fetchRidePage(url,options,deadline=Infinity){
- const remaining=Math.min(8000,deadline-Date.now());
+ const remaining=Math.min(30000,deadline-Date.now());
  if(remaining<=0)throw searchTimeout();
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),remaining);
  try{
