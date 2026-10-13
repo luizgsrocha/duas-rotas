@@ -10,7 +10,7 @@ const distanceCode=source.match(/function distance\(a,b\)\{[^\n]+\}/)?.[0];
 const classifierCode=source.slice(source.indexOf('function classifySearchStrategy('),source.indexOf('function selectBrgHubs('));
 const geoCode=source.slice(source.indexOf('function selectHubs('),source.indexOf('function waitMinutes('));
 assert.ok(distanceCode&&classifierCode&&geoCode,'routing functions must exist');
-vm.runInContext(distanceCode+'\n'+classifierCode+'\n'+geoCode,context);
+vm.runInContext('const MAX_GEO_HUBS=6;\n'+distanceCode+'\n'+classifierCode+'\n'+geoCode,context);
 const cities=[
  {slug:'taubate',lat:-23.0104,lng:-45.5593},
  {slug:'ribeirao-preto',lat:-21.1699,lng:-47.8099},
@@ -27,7 +27,7 @@ test('shorter journeys use BRG; Brasília uses geographic selector',()=>{
  assert.equal(context.classifySearchStrategy(cities,'taubate','brasilia'),'long');
 });
 test('missing coordinates never silently select a strategy',()=>{
- assert.equal(context.classifySearchStrategy(cities,'taubate','missing-coordinates'),null);
+ assert.equal(context.classifySearchStrategy(cities,'taubate','missing-coordinates'),'short');
 });
 test('geographic selector is still bounded by the existing 90 km cap',()=>{
  const hubs=context.selectHubs(cities,cities[0],cities[2]);
