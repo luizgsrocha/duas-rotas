@@ -2,6 +2,9 @@ name = "rua-nossa"
 main = "worker.js"
 compatibility_date = "2026-10-04"
 
+previews = { }
+
 [assets]
 directory = "."
 binding = "ASSETS"
+

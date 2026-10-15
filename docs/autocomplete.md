@@ -26,6 +26,8 @@ Consultas: sao paulo, taubatte, ribeirao preto, ribeirao pretoo, bom jesus rs, s
 Construção do cache: 7,67 ms. Trie: 17,20 ms, 31.297 nós e 64.716 referências. Compressão adicional para Radix: 19,49 ms, 7.555 nós e 33.412 referências. Contagens estruturais, não estimativas de bytes. Trie/Radix são protótipos apenas no benchmark e não são distribuídas ao cliente. O benchmark de prefixo não mede busca completa: essas estruturas não implementam substring, UF e fuzzy equivalentes. Economia absoluta do prefixo é inferior a 0,12 ms no p95 local; mantido array normalizado pelo custo/complexidade e desempenho completo já adequado.
 
 ## Validação e integração
-47 testes Node passaram localmente (12 de autocomplete e 35 regressões existentes), com sintaxe válida em app.js/worker.js. Browser local indisponível: download Chromium falhou; validação real no navegador é executada no workflow próprio antes do merge. Verificar resultados do workflow para evidência final; emulação não substitui teclado virtual e leitor de tela físicos.
+47 testes Node passaram localmente (12 de autocomplete e 35 regressões existentes), com sintaxe válida em app.js/worker.js. Browser local indisponível: download Chromium falhou. Validação Chromium aprovada no GitHub Actions (run 38808616877, job 116675850310), nos três viewports, teclado/toque e CPU 4×; emulação não substitui teclado virtual e leitor de tela físicos.
+
+A prévia Cloudflare inicialmente falhou por ausência do bloco `previews` no wrangler.toml. Adicionado `previews = { }`, conforme documentação atual, preservando assets e configurações de produção.
 
 Versão e cache-busters: v0.8.10. Rollback: reverter o merge deste PR; a Cloudflare recompila main pelo trigger existente. Worker, APIs de caronas, credenciais e algoritmos de rota preservados.
