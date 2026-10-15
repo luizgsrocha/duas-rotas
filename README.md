@@ -1,5 +1,7 @@
 # Rua Nossa
 
+**Idioma / Language:** [Português (Brasil)](README.md) · [English](README.en.md)
+
 Planejador de caronas pelo Brasil, com busca de viagens diretas e combinações com baldeações.
 
 ## Repositório
