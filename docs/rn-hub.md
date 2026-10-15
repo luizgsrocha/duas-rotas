@@ -76,5 +76,5 @@ O arquivo JSON mede 198.734 bytes e sua serialização V8, usada como aproximaç
 - REGIC 2018 descreve relações urbanas, não disponibilidade atual de caronas.
 - Distância geodésica pode divergir da malha rodoviária, balsas e fronteiras naturais.
 - A fonte externa pode falhar, bloquear ou omitir ofertas; a resposta sinaliza busca incompleta.
-- Slugs municipais repetidos entre estados já existem no contrato atual da API; o índice distingue por UF, mas a resolução do endpoint continua herdando esse limite.
+- Slugs municipais repetidos entre estados já existem no contrato atual da API. O índice distingue por UF, mas, como a fonte não aceita UF no identificador, o seletor mantém no máximo um candidato por slug para impedir cache ou confirmação no município homônimo errado.
 - Os testes são determinísticos com fonte simulada. Antes de ativar produção, validar em preview, observar CPU, memória, taxa de falhas, consultas por busca e qualidade real, e revisar manualmente uma amostra nacional.

@@ -33,7 +33,7 @@ export function selectRnHubCandidates(cities,from,to,index,options={}){
  // anchor before receiving another candidate. This avoids both extremes: only
  // capitals or only tiny towns that happen to sit exactly on the straight line.
  const take=candidate=>{
-   if(!candidate||selected.some(item=>rnHubDistance(item.city,candidate.city)<35))return false;
+   if(!candidate||selected.some(item=>item.city.slug===candidate.city.slug||rnHubDistance(item.city,candidate.city)<35))return false;
    selected.push(candidate);return true;
  };
  for(const bucket of buckets)take(bucket[0]);
@@ -47,7 +47,7 @@ export function selectRnHubCandidates(cities,from,to,index,options={}){
  // If separation was too strict, fill by score so small/short corridors still work.
  for(const candidate of ranked){
    if(selected.length===settings.maxCandidates)break;
-   if(!selected.some(item=>item.city.slug===candidate.city.slug&&item.city.uf===candidate.city.uf))selected.push(candidate);
+   if(!selected.some(item=>item.city.slug===candidate.city.slug))selected.push(candidate);
  }
  return selected.sort((a,b)=>a.progress-b.progress).map(item=>item.city);
 }

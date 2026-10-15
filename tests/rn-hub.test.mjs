@@ -54,6 +54,14 @@ test('context remains dominant enough to retain small regional connectors',()=>{
  }));
 });
 
+test('homonymous municipalities never enter the graph with the same source slug',()=>{
+ const api=loadWorker(),selected=api.selectRnHubCandidates(
+   cities,city('barro','CE'),city('fronteiras','PI'),index,{maxCandidates:30});
+ const slugs=selected.map(item=>item.slug);
+ assert.equal(new Set(slugs).size,slugs.length);
+ assert.ok(slugs.includes('cedro'));
+});
+
 for(const [from,fromUf,to,toUf,hub] of cases)test(`${from} → ${to} only returns a route after both real legs are verified`,async()=>{
  const offers={
    [`${from}|${hub}`]:[ride('08:00','10:00','first')],
