@@ -51,6 +51,8 @@ Com a flag ativa, até seis consultas partem dos hubs mais próximos do destino 
 
 Uma conexão só é retornada quando todos os trechos têm oferta extraída da fonte e os horários respeitam a janela escolhida. Cidades candidatas sem oferta nunca aparecem como carona. Respostas bem-sucedidas do provedor usam cache de 60 segundos durante o experimento; o cache local da requisição evita consultas duplicadas.
 
+A espera máxima padrão é 720 minutos, ainda editável nas opções avançadas. O padrão anterior de 90 minutos ocultava conexões nacionais reais — por exemplo, Taubaté → Guarulhos → Uberlândia — antes que o passageiro percebesse que o filtro era a causa. Qualquer valor menor escolhido manualmente continua sendo respeitado rigorosamente.
+
 ## Benchmark reproduzível
 
 Execute:

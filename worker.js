@@ -1,6 +1,6 @@
 import{RN_HUB_VERSION,selectRnHubCandidates}from"./rn-hub.js";
 const CITIES={pirassununga:{name:"Pirassununga",slug:"pirassununga",lat:-21.996,lng:-47.426},taubate:{name:"Taubaté",slug:"taubate",lat:-23.026,lng:-45.555},"sao-jose-dos-campos":{name:"São José dos Campos",slug:"sao-jose-dos-campos",lat:-23.189,lng:-45.884},campinas:{name:"Campinas",slug:"campinas",lat:-22.906,lng:-47.061}};
-const DEFAULT_MIN_WAIT=5,DEFAULT_MAX_WAIT=60,DEFAULT_MAX_TRANSFERS=2,MAX_TRANSFERS=10;
+const DEFAULT_MIN_WAIT=5,DEFAULT_MAX_WAIT=720,DEFAULT_MAX_TRANSFERS=2,MAX_TRANSFERS=10;
 export default{async fetch(request,env){
  const u=new URL(request.url);
  if(u.pathname==="/api/blablacar-lab")return blablacarLab(request,env);

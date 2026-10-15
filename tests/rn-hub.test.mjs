@@ -5,6 +5,8 @@ import {loadWorker,source,query,ride} from './helpers/worker.mjs';
 
 const cities=JSON.parse(fs.readFileSync(new URL('../cities.json',import.meta.url)));
 const index=JSON.parse(fs.readFileSync(new URL('../rn-hub-index.json',import.meta.url)));
+const page=fs.readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const workerSource=fs.readFileSync(new URL('../worker.js',import.meta.url),'utf8');
 const city=(slug,uf)=>cities.find(item=>item.slug===slug&&item.uf===uf);
 const cases=[
  ['taubate','SP','uberlandia','MG','ribeirao-preto'],
@@ -21,6 +23,11 @@ test('checked-in national index covers the municipality base and has reproducibl
  assert.ok(index.coverage.regic/cities.length>.99);
  assert.deepEqual(index.fields,['nationalScore','population','hierarchy','regicDegree']);
  assert.equal(index.weights.hierarchy+index.weights.connectivity+index.weights.population,1);
+});
+
+test('national discovery defaults to the documented 12-hour wait window',()=>{
+ assert.match(page,/id="maxWait"[^>]+value="720"/);
+ assert.match(workerSource,/DEFAULT_MAX_WAIT=720/);
 });
 
 test('national selector covers known useful regional hubs on all reference corridors',()=>{
