@@ -2,9 +2,9 @@
 
 ## Estado e ativação
 
-O RN-HUB é experimental e fica **desligado por padrão**. A produção continua usando RN-DIR, RN-CUR, RN-LON e RN-ROT sem mudanças quando `RN_HUB_ENABLED` não é `1`.
+O RN-HUB é experimental e fica **desligado em produção por padrão**. O preview de branches define `RN_HUB_ENABLED=1` em `[previews.vars]`, enquanto a configuração principal não define a variável. Assim a produção continua usando RN-DIR, RN-CUR, RN-LON e RN-ROT sem mudanças.
 
-Para validar em um ambiente isolado, configure `RN_HUB_ENABLED=1`. Se o índice estiver ausente, inválido ou incompatível, o Worker volta automaticamente ao seletor geográfico atual. Para rollback, remova a variável ou defina-a como `0`; não é necessário remover código nem dados.
+Para validar em outro ambiente isolado, configure `RN_HUB_ENABLED=1`. Se o índice estiver ausente, inválido ou incompatível, o Worker volta automaticamente ao seletor geográfico atual. Para rollback, remova a variável ou defina-a como `0`; não é necessário remover código nem dados.
 
 RN-DIR permanece independente. RN-CUR e RN-LON continuam classificando a distância e são o fallback. RN-ROT conserva o grafo limitado, os filtros temporais e o limite de 55 consultas; o RN-HUB apenas fornece candidatos e priorização adicionais.
 
