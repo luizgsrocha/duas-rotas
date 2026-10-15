@@ -29,7 +29,7 @@
 @media(max-width:360px){.search .route-fields{grid-template-columns:minmax(0,1fr)}.search .date-field{max-width:100%}}
 
 /* v0.6.1: searchable city comboboxes */
-.city-combobox{display:block;position:relative;width:100%;min-width:0}.city-combobox .city-input{width:100%}.city-options{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:30;max-height:240px;overflow-y:auto;overscroll-behavior:contain;padding:4px;border:1px solid var(--border);border-radius:10px;background:var(--card);box-shadow:0 8px 24px #0004}.city-options[hidden]{display:none}.search .city-option{display:block;width:100%;min-height:42px;padding:9px 11px;text-align:left;font-size:.92rem;font-weight:500;border:0;border-radius:7px;background:transparent;color:var(--text);cursor:pointer}.search .city-option:hover,.search .city-option.highlighted{background:var(--linkbg);color:var(--accent)}.city-empty{padding:12px;color:var(--muted);font-size:.9rem}.search{overflow:visible}
+.city-combobox{display:block;position:relative;width:100%;min-width:0}.city-combobox .city-input{width:100%}.city-options{position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:30;max-height:240px;overflow-y:auto;overscroll-behavior:contain;padding:4px;border:1px solid var(--border);border-radius:10px;background:var(--card);box-shadow:0 8px 24px #0004}.city-options[hidden]{display:none}.search .city-option{display:block;width:100%;min-height:44px;padding:9px 11px;text-align:left;font-size:.92rem;font-weight:500;border:0;border-radius:7px;background:transparent;color:var(--text);cursor:pointer}.search .city-option:hover,.search .city-option.highlighted{background:var(--linkbg);color:var(--accent)}.city-empty{padding:12px;color:var(--muted);font-size:.9rem}.search{overflow:visible}
 
 /* v0.6.7: readable summaries without opening each result group */
 .combination-waits{display:block;padding:9px 11px;border-radius:8px;background:var(--linkbg);color:var(--text);font-size:.82rem;line-height:1.45}
@@ -105,3 +105,5 @@ header>.site-share .share-feedback{max-width:100%}
  header>.site-share{margin-top:8px}
  header>.site-share button{padding:7px 10px}
 }
+
+.city-combobox .city-input{font-size:16px}.city-options{max-height:min(240px,40dvh);touch-action:pan-y}

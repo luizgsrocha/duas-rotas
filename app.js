@@ -38,7 +38,83 @@ $("#share-site").addEventListener("click",async()=>{
 });
 
 media.addEventListener?.("change",()=>{if(theme==="auto")applyTheme("auto")});
-$("#date").value=spDate(new Date());$("#openCalendar").addEventListener("click",()=>{const input=$("#date");try{if(typeof input.showPicker==="function"){input.showPicker();return}}catch{}input.focus();input.click()});$("#search").onclick=check;$("#sort").onchange=renderLastResults;$("#swap").onclick=swapRoute;$("#locate").onclick=useLocation;let cities=[],cityByName=new Map(),lastResults=null,lastDate="";loadCities();async function loadCities(){try{const r=await fetch("/api/cities"),data=await r.json();if(!r.ok||!Array.isArray(data))return;cities=data;cityByName=new Map(cities.map(c=>[norm(c.name),c]));$$(".city-input").forEach(input=>{bindCity(input);input._refreshCities?.()})}catch{}}function bindCity(input){if(input.dataset.cityBound)return;input.dataset.cityBound="1";const box=input.closest(".city-combobox"),list=box.querySelector(".city-options");let active=-1;function close(){list.hidden=true;input.setAttribute("aria-expanded","false");active=-1;input.removeAttribute("aria-activedescendant")}function draw(){const q=norm(input.value),matches=(q?cities.filter(c=>norm(c.name).includes(q)):cities).slice(0,40);list.replaceChildren();active=-1;if(!matches.length){const empty=document.createElement("div");empty.className="city-empty";empty.textContent=cities.length?"Nenhuma cidade encontrada.":"Carregando cidades…";list.append(empty)}else matches.forEach((c,i)=>{const option=document.createElement("button");option.type="button";option.className="city-option";option.id=input.id+"-option-"+i;option.setAttribute("role","option");option.setAttribute("aria-selected",String(norm(input.value)===norm(c.name)));option.textContent=c.name;option.addEventListener("pointerdown",e=>e.preventDefault());option.addEventListener("click",()=>{setCity(input,c);close();input.focus()});list.append(option)});list.hidden=false;input.setAttribute("aria-expanded","true")}function move(n){const opts=[...list.querySelectorAll(".city-option")];if(!opts.length)return;active=(active+n+opts.length)%opts.length;opts.forEach((o,i)=>o.classList.toggle("highlighted",i===active));input.setAttribute("aria-activedescendant",opts[active].id);opts[active].scrollIntoView({block:"nearest"})}input.addEventListener("focus",draw);input.addEventListener("input",()=>{const c=cityByName.get(norm(input.value));input.dataset.slug=c?c.slug:"";draw()});input.addEventListener("keydown",e=>{if(e.key==="Escape"){close();return}if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();if(list.hidden)draw();move(e.key==="ArrowDown"?1:-1)}if(e.key==="Enter"&&!list.hidden&&active>=0){e.preventDefault();list.querySelectorAll(".city-option")[active]?.click()}if(e.key==="Tab")close()});input.addEventListener("blur",()=>setTimeout(()=>{if(!box.contains(document.activeElement))close()},100));document.addEventListener("pointerdown",e=>{if(!box.contains(e.target))close()});input.addEventListener("change",()=>{const c=cityByName.get(norm(input.value));input.dataset.slug=c?c.slug:""});input._refreshCities=()=>{if(document.activeElement===input)draw()}}function setCity(input,c){input.value=c.name;input.dataset.slug=c.slug}function swapRoute(){const origin=$("#origin"),dest=$(".destination"),a=selectedCity(origin),b=selectedCity(dest);if(!a||!b){$("#status").textContent="Escolha uma origem e um destino válidos antes de inverter.";return}setCity(origin,b);setCity(dest,a)}function locationFeedback(message,error=false){const el=$("#location-feedback");el.textContent=message;el.hidden=!message;el.classList.toggle("error",error)}
+$("#date").value=spDate(new Date());$("#openCalendar").addEventListener("click",()=>{const input=$("#date");try{if(typeof input.showPicker==="function"){input.showPicker();return}}catch{}input.focus();input.click()});$("#search").onclick=check;$("#sort").onchange=renderLastResults;$("#swap").onclick=swapRoute;$("#locate").onclick=useLocation;let cities=[],cityByName=new Map(),lastResults=null,lastDate="";loadCities();async function loadCities(){try{const r=await fetch("/api/cities"),data=await r.json();if(!r.ok||!Array.isArray(data))return;cities=data;cityByName=new Map(cities.map(c=>[cityNormalize(c.name),c]));$$(".city-input").forEach(input=>{bindCity(input);input._refreshCities?.()})}catch{}}// Search-only normalization: route/provider normalization remains unchanged.
+function cityNormalize(value){
+  return String(value??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+}
+const citySearchCache=new WeakMap();
+const cityStates=new Set("AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO".toLowerCase().split(" "));
+function citySearchRecords(items){
+  if(!citySearchCache.has(items))citySearchCache.set(items,items.map(c=>{
+    const name=cityNormalize(c.name),uf=String(c.uf||c.name.match(/,\s*([a-z]{2})$/i)?.[1]||"").toLowerCase();
+    const base=uf&&name.endsWith(" "+uf)?name.slice(0,-3):name;
+    return {c,name,base,uf,words:base.split(" ")};
+  }));
+  return citySearchCache.get(items);
+}
+function cityDistance(a,b,limit=2){
+  if(Math.abs(a.length-b.length)>limit)return limit+1;
+  let prev=Array.from({length:b.length+1},(_,i)=>i);
+  for(let i=1;i<=a.length;i++){
+    const next=[i];let min=i;
+    for(let j=1;j<=b.length;j++){
+      next[j]=Math.min(next[j-1]+1,prev[j]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));
+      min=Math.min(min,next[j]);
+    }
+    if(min>limit)return limit+1;
+    prev=next;
+  }
+  return prev[b.length];
+}
+// Minimum edit distance to a candidate prefix in one DP pass.
+function cityPrefixDistance(query,word,limit){
+  if(word.length<query.length-limit)return limit+1;
+  word=word.slice(0,query.length+limit);
+  let prev=Array.from({length:word.length+1},(_,i)=>i);
+  for(let i=1;i<=query.length;i++){
+    const next=Array(word.length+1).fill(limit+1);next[0]=i;let min=i;
+    for(let j=Math.max(1,i-limit);j<=Math.min(word.length,i+limit);j++){
+      next[j]=Math.min(next[j-1]+1,prev[j]+1,prev[j-1]+(query[i-1]===word[j-1]?0:1));
+      min=Math.min(min,next[j]);
+    }
+    if(min>limit)return limit+1;
+    prev=next;
+  }
+  return Math.min(...prev.slice(Math.max(1,query.length-limit)));
+}
+function rankCities(items,query,limit=40){
+  let q=cityNormalize(query);
+  if(!q)return items.slice(0,limit);
+  const tokens=q.split(" ");let state="";
+  if(tokens.length>1&&cityStates.has(tokens.at(-1))){state=tokens.pop();q=tokens.join(" ")}
+  const matches=[],fuzzy=[];
+  for(const r of citySearchRecords(items)){
+    if(state&&r.uf!==state)continue;
+    const {base,words}=r;let score=Infinity;
+    if(base===q)score=0;
+    else if(base.startsWith(q))score=10+(base.length-q.length)*.001;
+    else if(words.some((_,i)=>words.slice(i).join(" ").startsWith(q)))score=20;
+    else if(base.includes(q))score=30;
+    if(Number.isFinite(score))matches.push({r,score});
+    else if(q.length>=4)fuzzy.push(r);
+  }
+  // Exact/prefix/substring results always win. Avoid fuzzy work when the list is full.
+  if(!matches.length&&q.length>=4){
+    const edits=q.length<6?1:2;
+    for(const r of fuzzy){
+      let distance=edits+1;
+      const candidates=q.includes(" ")?[r.base]:r.words;
+      for(const word of candidates){
+        distance=Math.min(distance,cityPrefixDistance(q,word,edits));
+      }
+      if(distance<=edits)matches.push({r,score:40+distance+Math.abs(r.base.length-q.length)*.001});
+    }
+  }
+  matches.sort((a,b)=>a.score-b.score||a.r.c.name.localeCompare(b.r.c.name,"pt-BR")||a.r.c.slug.localeCompare(b.r.c.slug));
+  return matches.slice(0,limit).map(x=>x.r.c);
+}
+function bindCity(input){if(input.dataset.cityBound)return;input.dataset.cityBound="1";const box=input.closest(".city-combobox"),list=box.querySelector(".city-options");let active=-1;function close(){list.hidden=true;input.setAttribute("aria-expanded","false");active=-1;input.removeAttribute("aria-activedescendant")}function draw(){const matches=rankCities(cities,input.value);list.replaceChildren();active=-1;input.removeAttribute("aria-activedescendant");if(!matches.length){const empty=document.createElement("div");empty.className="city-empty";empty.textContent=cities.length?"Nenhuma cidade encontrada.":"Carregando cidades…";list.append(empty)}else matches.forEach((c,i)=>{const option=document.createElement("button");option.type="button";option.tabIndex=-1;option.className="city-option";option.id=input.id+"-option-"+i;option.setAttribute("role","option");option.setAttribute("aria-selected",String(cityNormalize(input.value)===cityNormalize(c.name)));option.textContent=c.name;option.addEventListener("pointerdown",e=>e.preventDefault());option.addEventListener("click",()=>{setCity(input,c);input.focus();close()});list.append(option)});list.hidden=false;input.setAttribute("aria-expanded","true")}function move(n){const opts=[...list.querySelectorAll(".city-option")];if(!opts.length)return;active=active<0?(n>0?0:opts.length-1):(active+n+opts.length)%opts.length;opts.forEach((o,i)=>{o.classList.toggle("highlighted",i===active);o.setAttribute("aria-selected",String(i===active))});input.setAttribute("aria-activedescendant",opts[active].id);opts[active].scrollIntoView({block:"nearest"})}input.addEventListener("focus",draw);input.addEventListener("input",()=>{const c=cityByName.get(cityNormalize(input.value));input.dataset.slug=c?c.slug:"";draw()});input.addEventListener("keydown",e=>{if(e.isComposing)return;if(e.key==="Escape"){close();return}if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();if(list.hidden)draw();move(e.key==="ArrowDown"?1:-1)}if(e.key==="Enter"&&!list.hidden&&active>=0){e.preventDefault();list.querySelectorAll(".city-option")[active]?.click()}if(e.key==="Tab")close()});input.addEventListener("blur",()=>setTimeout(()=>{if(!box.contains(document.activeElement))close()},100));document.addEventListener("pointerdown",e=>{if(!box.contains(e.target))close()});input.addEventListener("change",()=>{const c=cityByName.get(cityNormalize(input.value));input.dataset.slug=c?c.slug:""});input._refreshCities=()=>{if(document.activeElement===input)draw()}}function setCity(input,c){input.value=c.name;input.dataset.slug=c.slug}function swapRoute(){const origin=$("#origin"),dest=$(".destination"),a=selectedCity(origin),b=selectedCity(dest);if(!a||!b){$("#status").textContent="Escolha uma origem e um destino válidos antes de inverter.";return}setCity(origin,b);setCity(dest,a)}function locationFeedback(message,error=false){const el=$("#location-feedback");el.textContent=message;el.hidden=!message;el.classList.toggle("error",error)}
 async function useLocation(){
  const btn=$("#locate");
  locationFeedback("");
@@ -65,7 +141,7 @@ async function useLocation(){
    locationFeedback(messages[error.code]||"Não foi possível acessar sua localização. Tente novamente.",true);
  },{enableHighAccuracy:false,timeout:20000,maximumAge:300000});
 }
-function selectedCity(input){const c=cityByName.get(norm(input.value));if(c){input.dataset.slug=c.slug;return c}return null}function norm(v){return String(v).normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase()}
+function selectedCity(input){const c=cityByName.get(cityNormalize(input.value));if(c){input.dataset.slug=c.slug;return c}return null}function norm(v){return String(v).normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase()}
 function spDate(d){return d.toLocaleDateString("en-CA",{timeZone:"America/Sao_Paulo"})}async function check(){window.scrollTo({top:document.documentElement.scrollHeight,behavior:"smooth"});const date=$("#date").value,minWait=Number($("#minWait").value),maxWait=Number($("#maxWait").value),maxTransfers=Number($("#maxTransfers").value),originCity=selectedCity($("#origin")),destinationCity=selectedCity($(".destination"));if(!Number.isInteger(minWait)||!Number.isInteger(maxWait)||minWait<0||maxWait<minWait||maxWait>720){$("#status").textContent="Defina um intervalo de espera válido entre 0 e 720 minutos.";$("#results").innerHTML="";return}if(!Number.isInteger(maxTransfers)||maxTransfers<0||maxTransfers>10){$("#status").textContent="Defina no máximo de 0 a 10 baldeações.";$("#results").innerHTML="";return}if(!originCity||!destinationCity){$("#status").textContent="Selecione uma cidade válida na lista.";$("#results").innerHTML="";return}if(originCity.slug===destinationCity.slug){$("#status").textContent="A origem não pode ser igual ao destino.";$("#results").innerHTML="";return}const originName=originCity.name,destinationName=destinationCity.name;const base="/api/exists?date="+encodeURIComponent(date)+"&origin="+encodeURIComponent(originCity.slug)+"&destination="+encodeURIComponent(destinationCity.slug)+"&originName="+encodeURIComponent(originName)+"&destinationName="+encodeURIComponent(destinationName)+"&minWait="+encodeURIComponent(minWait)+"&maxWait="+encodeURIComponent(maxWait)+"&maxTransfers="+encodeURIComponent(maxTransfers);const fetchMode=async mode=>{
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),mode==="direct"?35000:305000);
  try{const r=await fetch(base+"&mode="+mode,{cache:"no-store",signal:controller.signal}),d=await r.json();if(!r.ok)throw new Error(d.error||"Falha na consulta");return d}
