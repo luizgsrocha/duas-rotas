@@ -15,6 +15,8 @@ https://github.com/luizgsrocha/rua-nossa
 
 A busca de conexões usa candidatos geográficos e limites de consultas; não garante encontrar todas as combinações possíveis. Consultas externas têm limite de tempo e erros de disponibilidade são informados.
 
+O RN-HUB é um seletor nacional opcional de cidades intermediárias. Ele é pré-calculado com dados do IBGE, valida cada trecho na fonte e permanece desligado por padrão até a validação do PR. Consulte [docs/rn-hub.md](docs/rn-hub.md).
+
 ## Publicação
 Cloudflare Workers Builds acompanha a branch `main` deste repositório e executa `npx wrangler deploy`.
 
@@ -22,3 +24,4 @@ O Worker usa o nome `rua-nossa`, configurado em `wrangler.toml`, com o endereço
 https://rua-nossa.lgsr96.workers.dev/
 
 O repositório e o Worker estão alinhados ao nome `rua-nossa`. Cloudflare Workers Builds publica automaticamente as alterações da branch `main`.
+
