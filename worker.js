@@ -104,7 +104,9 @@ async function findRoutes(origin,target,date,originName,targetName,minWait,maxWa
     }
     const picked=fairFinishes.concat(proposals.filter(p=>p.next.slug!==to.slug));
    const nextFrontier=[];
-   const depthBudget=Math.max(3,Math.floor(BRG_MAX_QUERIES/(maxTransfers+1)));
+   // Inspect every selected first-hop hub even when the passenger permits more
+   // transfers. The global query cap still bounds the complete search.
+   const depthBudget=Math.max(BRG_BEAM_WIDTH,Math.floor(BRG_MAX_QUERIES/(maxTransfers+1)));
    let depthQueries=0;
    for(const p of picked){
      if(Date.now()>=deadline)return{routes,incomplete:true,diagnostics};

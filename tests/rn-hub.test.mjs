@@ -27,7 +27,21 @@ test('checked-in national index covers the municipality base and has reproducibl
 
 test('national discovery defaults to the documented 12-hour wait window',()=>{
  assert.match(page,/id="maxWait"[^>]+value="720"/);
+ assert.doesNotMatch(page,/id="minWait"/);
+ assert.match(page,/Tempo máximo de espera entre baldeações/);
  assert.match(workerSource,/DEFAULT_MAX_WAIT=720/);
+});
+
+test('a larger transfer limit does not discard a valid first-hop hub',async()=>{
+ const offers={
+   'taubate|guarulhos':[ride('04:40','06:20','first')],
+   'guarulhos|uberlandia':[ride('15:00','22:20','second')],
+ };
+ const result=await query(loadWorker(source(offers)),{geo:cities,hubIndex:index,rnHubEnabled:true,
+   origin:'taubate',destination:'uberlandia',maxTransfers:4,maxWait:720,debug:'1'});
+ assert.ok(result.body.routes.some(route=>route.legs.map(leg=>`${leg.from}|${leg.to}`).join(',')===
+   'taubate|guarulhos,guarulhos|uberlandia'),JSON.stringify(result.body.diagnostics));
+ assert.ok(!result.body.diagnostics.skippedPairs.some(item=>item.pair==='taubate|guarulhos'));
 });
 
 test('national selector covers known useful regional hubs on all reference corridors',()=>{
