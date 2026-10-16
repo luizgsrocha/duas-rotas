@@ -5,6 +5,9 @@ compatibility_date = "2026-10-04"
 [previews.vars]
 RN_HUB_ENABLED = "1"
 
+[[kv_namespaces]]
+binding = "RIDES_CACHE"
+
 [assets]
 directory = "."
 binding = "ASSETS"
