@@ -4,7 +4,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
-const source=fs.readFileSync(new URL('../worker.js',import.meta.url),'utf8').replace('export default','const workerDefault =');
+const hubSource=fs.readFileSync(new URL('../rn-hub.js',import.meta.url),'utf8').replaceAll('export ','');
+const source=hubSource+'\n'+fs.readFileSync(new URL('../worker.js',import.meta.url),'utf8')
+ .replace(/^import[^\n]+\n/,'').replace('export default','const workerDefault =');
 const cities=[
  {name:'Taubaté, SP',slug:'taubate',lat:-23.0104,lng:-45.5593},
  {name:'Campinas, SP',slug:'campinas',lat:-22.9053,lng:-47.0659},
@@ -37,3 +39,4 @@ test('Incompatible waiting time is counted and rejected',async()=>{
  assert.equal(result.routes.length,0);
  assert.ok(result.diagnostics.rejectedWait>0);
 });
+

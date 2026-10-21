@@ -16,6 +16,10 @@ jobs:
       - name: Check application syntax
         run: |
           node --check worker.js
+          node --check rn-hub.js
           node --check app.js
       - name: Test routing and source failures
-        run: node --test tests/*.test.mjs
+        run: node --test tests/*.test.mjs tests/*.test.cjs
+      - name: Benchmark RN-HUB budgets and reference quality
+        run: node scripts/benchmark-rn-hub.mjs
+

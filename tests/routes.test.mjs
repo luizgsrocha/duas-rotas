@@ -80,6 +80,22 @@ test('direct source failure returns 502 rather than no rides',async()=>{
   assert.equal(status,502);assert.equal(body.code,'SOURCE_UNAVAILABLE');
 });
 
+test('debug response identifies upstream HTTP failures without exposing details by default',async()=>{
+  const api=loadWorker({fetch:async()=>new Response('Unavailable',{status:503})});
+  const normal=await query(api,{mode:'direct'});
+  const debug=await query(api,{mode:'direct',debug:'1'});
+  assert.equal(normal.body.sourceFailure,undefined);
+  assert.deepEqual(debug.body.sourceFailure,{kind:'http',status:503});
+});
+
+test('transfer diagnostics record safe upstream failure status per segment',async()=>{
+  const api=loadWorker({fetch:async()=>new Response('Unavailable',{status:403})});
+  const {body}=await query(api,{mode:'transfers',debug:'1'});
+  assert.equal(body.incomplete,true);
+  assert.ok(body.diagnostics.sourceFailures.length>0);
+  assert.ok(body.diagnostics.sourceFailures.every(x=>x.kind==='http'&&x.status===403&&!('url' in x)));
+});
+
 test('direct overnight ride remains available',async()=>{
   const {body}=await query(loadWorker(source({'taubate|pirassununga':[ride('23:00','01:00')]})),{mode:'direct'});
   assert.equal(body.count,1);

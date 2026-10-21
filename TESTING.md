@@ -26,3 +26,9 @@ A .assetsignore impede que testes, workflows e código interno sejam servidos co
 - `node scripts/benchmark-autocomplete.mjs`: catálogo completo; aquecimento + 30 rodadas; prefixo puro comparado separadamente da busca completa. Opcional: `BASELINE_APP=/tmp/app-pr124-original.js` compara o algoritmo original do PR. Obtenha esse arquivo com `git show bbb771160a84f3ef87dce9431d9c248269d8dfd7:app.js`.
 - O workflow `Autocomplete browser checks` instala Playwright 1.56.1 e Chromium e executa `node scripts/test-autocomplete-ui.mjs`: 360×640, 390×844 e desktop, toque, teclado, ARIA, slug, temas, overflow e busca com CPU 4× mais lenta.
 - Emulação não comprova teclado virtual físico, TalkBack ou VoiceOver; esses pontos exigem aparelho real.
+
+## RN-HUB
+
+- `node --test tests/*.test.mjs tests/*.test.cjs`: inclui as cinco rotas nacionais de referência, cidade pequena, fonte indisponível, horários incompatíveis, conexão ausente e limites de baldeação.
+- `node scripts/benchmark-rn-hub.mjs`: compara latência e cobertura de polos regionais do seletor geográfico atual com o RN-HUB, além de verificar memória serializada, quantidade de consultas e uma rota de duas baldeações.
+- Os cenários usam uma fonte determinística. Uma rota só passa quando todos os trechos e horários são confirmados; não medem a disponibilidade real futura do provedor.

@@ -2,7 +2,8 @@ name = "rua-nossa"
 main = "worker.js"
 compatibility_date = "2026-10-04"
 
-previews = { }
+[previews.vars]
+RN_HUB_ENABLED = "1"
 
 [assets]
 directory = "."
