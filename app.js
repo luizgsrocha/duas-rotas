@@ -142,12 +142,63 @@ async function useLocation(){
  },{enableHighAccuracy:false,timeout:20000,maximumAge:300000});
 }
 function selectedCity(input){const c=cityByName.get(cityNormalize(input.value));if(c){input.dataset.slug=c.slug;return c}return null}function norm(v){return String(v).normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase()}
-function spDate(d){return d.toLocaleDateString("en-CA",{timeZone:"America/Sao_Paulo"})}async function check(){window.scrollTo({top:document.documentElement.scrollHeight,behavior:"smooth"});const date=$("#date").value,minWait=Number($("#minWait").value),maxWait=Number($("#maxWait").value),maxTransfers=Number($("#maxTransfers").value),originCity=selectedCity($("#origin")),destinationCity=selectedCity($(".destination"));if(!Number.isInteger(minWait)||!Number.isInteger(maxWait)||minWait<0||maxWait<minWait||maxWait>720){$("#status").textContent="Defina um intervalo de espera válido entre 0 e 720 minutos.";$("#results").innerHTML="";return}if(!Number.isInteger(maxTransfers)||maxTransfers<0||maxTransfers>10){$("#status").textContent="Defina no máximo de 0 a 10 baldeações.";$("#results").innerHTML="";return}if(!originCity||!destinationCity){$("#status").textContent="Selecione uma cidade válida na lista.";$("#results").innerHTML="";return}if(originCity.slug===destinationCity.slug){$("#status").textContent="A origem não pode ser igual ao destino.";$("#results").innerHTML="";return}const originName=originCity.name,destinationName=destinationCity.name;const base="/api/exists?date="+encodeURIComponent(date)+"&origin="+encodeURIComponent(originCity.slug)+"&destination="+encodeURIComponent(destinationCity.slug)+"&originName="+encodeURIComponent(originName)+"&destinationName="+encodeURIComponent(destinationName)+"&minWait="+encodeURIComponent(minWait)+"&maxWait="+encodeURIComponent(maxWait)+"&maxTransfers="+encodeURIComponent(maxTransfers);const fetchMode=async mode=>{
- const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),mode==="direct"?35000:305000);
- try{const r=await fetch(base+"&mode="+mode,{cache:"no-store",signal:controller.signal}),d=await r.json();if(!r.ok)throw new Error(d.error||"Falha na consulta");return d}
- catch(error){if(controller.signal.aborted)throw new Error("A consulta demorou demais. Tente novamente.");throw error}
- finally{clearTimeout(timer)}
-};$("#search").disabled=true;lastDate=date;lastResults={originName,destinationName,routes:[],count:0};$("#transferLoading").hidden=true;$("#status").textContent="Procurando caronas diretas…";$("#results").innerHTML="";try{const direct=await fetchMode("direct");lastResults=direct;renderLastResults();const directTotal=direct.count;if(maxTransfers===0){$("#status").textContent=directTotal?directTotal+" carona(s) direta(s) encontrada(s).":"Nenhuma rota encontrada nessa data.";return}$("#status").textContent=(directTotal?directTotal+" carona(s) direta(s) encontrada(s).":"Nenhuma carona direta encontrada.")+"\nBuscando baldeações…";$("#transferLoading").hidden=false;let transferTotal=0,transferError="";try{const transfers=await fetchMode("transfers");transferTotal=transfers.count;transferError=transfers.incomplete?(transfers.warning||"Alguns trechos não puderam ser consultados."):"";const routes=[...direct.routes,...transfers.routes];lastResults={...direct,routes,count:routes.length,transferCount:transferTotal,incomplete:transfers.incomplete}}catch(error){lastResults={...direct,incomplete:true};transferError=error.message||"Falha ao buscar conexões"}renderLastResults();$("#transferLoading").hidden=true;if(transferError){const found=directTotal+transferTotal;$("#status").textContent=found?found+" "+(found===1?"opção encontrada":"opções encontradas")+" para sua viagem! "+directTotal+" "+(directTotal===1?"carona direta":"caronas diretas")+" e "+transferTotal+" "+(transferTotal===1?"combinação com baldeação":"combinações com baldeação")+". Algumas outras conexões não puderam ser verificadas. Pode haver mais opções disponíveis.":"Não foi possível concluir a busca de conexões. Tente novamente em instantes.";return}const total=lastResults.count;$("#status").textContent=total?total+" "+(total===1?"combinação encontrada":"combinações encontradas")+" — "+directTotal+" "+(directTotal===1?"direta":"diretas")+" e "+transferTotal+" "+"com baldeação.":"Nenhuma rota encontrada nessa data."}catch(e){$("#transferLoading").hidden=true;$("#status").textContent="Não foi possível verificar agora: "+e.message}finally{$("#transferLoading").hidden=true;$("#search").disabled=false}}
+function spDate(d){return d.toLocaleDateString("en-CA",{timeZone:"America/Sao_Paulo"})}
+async function runSearchModes(fetchMode,maxTransfers,onUpdate=()=>{}){
+ let direct=null,directError=null,transfers=null,transferError=null;
+ try{direct=await fetchMode("direct")}catch(error){directError=error}
+ onUpdate({phase:"direct",direct,directError});
+ if(maxTransfers>0){
+  onUpdate({phase:"transfers",direct,directError});
+  try{transfers=await fetchMode("transfers")}catch(error){transferError=error}
+ }
+ return{direct,directError,transfers,transferError};
+}
+async function check(){
+ window.scrollTo({top:document.documentElement.scrollHeight,behavior:"smooth"});
+ const date=$("#date").value,maxWait=Number($("#maxWait").value),maxTransfers=Number($("#maxTransfers").value),originCity=selectedCity($("#origin")),destinationCity=selectedCity($(".destination"));
+ if(!Number.isInteger(maxWait)||maxWait<0||maxWait>720){$("#status").textContent="Defina um tempo máximo de espera entre 0 e 720 minutos.";$("#results").innerHTML="";return}
+ if(!Number.isInteger(maxTransfers)||maxTransfers<0||maxTransfers>10){$("#status").textContent="Defina no máximo de 0 a 10 baldeações.";$("#results").innerHTML="";return}
+ if(!originCity||!destinationCity){$("#status").textContent="Selecione uma cidade válida na lista.";$("#results").innerHTML="";return}
+ if(originCity.slug===destinationCity.slug){$("#status").textContent="A origem não pode ser igual ao destino.";$("#results").innerHTML="";return}
+ const originName=originCity.name,destinationName=destinationCity.name;
+ const base="/api/exists?date="+encodeURIComponent(date)+"&origin="+encodeURIComponent(originCity.slug)+"&destination="+encodeURIComponent(destinationCity.slug)+"&originName="+encodeURIComponent(originName)+"&destinationName="+encodeURIComponent(destinationName)+"&minWait=0&maxWait="+encodeURIComponent(maxWait)+"&maxTransfers="+encodeURIComponent(maxTransfers);
+ const fetchMode=async mode=>{
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),mode==="direct"?35000:305000);
+  try{const r=await fetch(base+"&mode="+mode,{cache:"no-store",signal:controller.signal}),d=await r.json();if(!r.ok)throw new Error(d.error||"Falha na consulta");return d}
+  catch(error){if(controller.signal.aborted)throw new Error("A consulta demorou demais. Tente novamente.");throw error}
+  finally{clearTimeout(timer)}
+ };
+ $("#search").disabled=true;lastDate=date;lastResults={originName,destinationName,routes:[],count:0};$("#transferLoading").hidden=true;$("#status").textContent="Procurando caronas diretas…";$("#results").innerHTML="";
+ try{
+  const search=await runSearchModes(fetchMode,maxTransfers,state=>{
+   if(state.phase==="direct"){
+    if(state.direct){lastResults=state.direct;renderLastResults();$("#status").textContent=state.direct.count?state.direct.count+" carona(s) direta(s) encontrada(s).":"Nenhuma carona direta encontrada."}
+    else{$("#status").textContent=maxTransfers>0?"A consulta direta falhou. Continuando a busca por baldeações…":"Não foi possível consultar caronas diretas.";lastResults={originName,destinationName,routes:[],count:0,incomplete:true};renderLastResults()}
+   }
+   if(state.phase==="transfers"){
+    $("#status").textContent=(state.directError?"Busca direta indisponível. ":state.direct?.count?state.direct.count+" carona(s) direta(s). ":"Nenhuma carona direta encontrada. ")+"Buscando baldeações…";
+    $("#transferLoading").hidden=false;
+   }
+  });
+  const directTotal=search.direct?.count||0,transferTotal=search.transfers?.count||0;
+  const transferError=search.transferError?.message||(search.transfers?.incomplete?(search.transfers.warning||"Alguns trechos não puderam ser consultados."):"");
+  const incomplete=Boolean(search.directError||search.direct?.incomplete||search.transferError||search.transfers?.incomplete);
+  const routes=[...(search.direct?.routes||[]),...(search.transfers?.routes||[])];
+  lastResults={...(search.direct||{}),originName,destinationName,routes,count:routes.length,directCount:directTotal,transferCount:transferTotal,incomplete};
+  renderLastResults();$("#transferLoading").hidden=true;
+  if(maxTransfers===0){
+   $("#status").textContent=search.directError?"Não foi possível verificar a busca direta: "+search.directError.message:search.direct?.incomplete?(search.direct.warning||"A busca ficou incompleta."):directTotal?directTotal+" carona(s) direta(s) encontrada(s).":"Nenhuma rota encontrada nessa data.";
+   return;
+  }
+  if(incomplete){
+   const reasons=[search.directError?"A consulta direta falhou: "+search.directError.message:"",transferError?"A busca de baldeações ficou incompleta: "+transferError:""].filter(Boolean).join(" ");
+   $("#status").textContent=routes.length?routes.length+" opção(ões) verificada(s), mas a busca ficou incompleta. "+reasons:"Não foi possível concluir toda a busca. "+(reasons||"Tente novamente em instantes.");
+   return;
+  }
+  $("#status").textContent=routes.length?routes.length+" combinação(ões) encontrada(s) — "+directTotal+" direta(s) e "+transferTotal+" com baldeação.":"Nenhuma rota encontrada nessa data.";
+ }catch(error){$("#transferLoading").hidden=true;$("#status").textContent="Não foi possível verificar agora: "+error.message}
+ finally{$("#transferLoading").hidden=true;$("#search").disabled=false}
+}
 
 function renderLastResults(){if(!lastResults)return;const mode=$("#sort").value;$("#results").innerHTML=[lastResults].map(d=>{const routes=sortRoutes(d.routes||[],mode);return '<section class="destination-result"><h2>'+esc(d.destinationName)+'</h2><small>'+esc(d.originName)+' → '+esc(d.destinationName)+' · '+formatDate(lastDate)+'</small>'+(routes.length?groupCards(routes):(d.incomplete?'<article class="route"><h3>Busca incompleta</h3><p>Não foi possível verificar todas as conexões. Tente novamente.</p></article>':'<article class="route"><h3>Nenhuma rota encontrada</h3></article>'))+'</section>'}).join("")}
 function sortRoutes(routes,mode){const list=[...routes];if(mode==="fastest")return list.sort((a,b)=>routeDuration(a)-routeDuration(b));if(mode==="cheapest")return list.sort((a,b)=>routePrice(a)-routePrice(b));if(mode==="fewest")return list.sort((a,b)=>a.legs.length-b.legs.length||routeDuration(a)-routeDuration(b));return list.sort((a,b)=>a.legs.length-b.legs.length||routeDuration(a)-routeDuration(b)||routePrice(a)-routePrice(b))}function routeDuration(route){if(!route.legs.length)return Infinity;const a=mins(route.legs[0].ride.departure),b=mins(route.legs.at(-1).ride.arrival);if(a<0||b<0)return Infinity;return b>=a?b-a:b+1440-a}function routePrice(route){if(Number.isFinite(route.totalPrice))return route.totalPrice;return route.legs.reduce((n,x)=>n+(parseFloat(String(x.ride.price||"0").replace(",","."))||0),0)}
