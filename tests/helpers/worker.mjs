@@ -46,7 +46,7 @@ export async function query(api,{geo=cities,hubIndex=null,rnHubEnabled=false,ori
   const params=new URLSearchParams({date:extra.date||'2026-10-14',origin,destination,mode,
     maxTransfers:String(maxTransfers),minWait:String(minWait),maxWait:String(maxWait),...extra});
   const env={RN_HUB_ENABLED:rnHubEnabled?'1':'0',RIDES_CACHE:api.segmentCache,ASSETS:{fetch:async input=>Response.json(new URL(input).pathname==='/rn-hub-index.json'?hubIndex:geo,{status:hubIndex||new URL(input).pathname!=='/rn-hub-index.json'?200:404})}};
-  const response=await api.worker.fetch(new Request('https://rua-nossa.example/api/exists?'+params),env);
+  const response=await api.worker.fetch(new Request('https://duas-rotas.example/api/exists?'+params),env);
   return {status:response.status,body:await response.json()};
 }
 

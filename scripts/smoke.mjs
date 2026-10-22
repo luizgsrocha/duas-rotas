@@ -6,7 +6,7 @@ async function check(path){
   return response;
 }
 const html=await (await check('/')).text();
-if(!html.includes('Rua Nossa')||!html.includes('id="maxTransfers"'))throw new Error('Search page missing');
+if(!html.includes('Duas Rotas')||!html.includes('id="maxTransfers"'))throw new Error('Search page missing');
 console.log('PASS deployed search page');
 const cities=await (await check('/api/cities')).json();
 if(!Array.isArray(cities)||!cities.some(c=>c.name==='Campinas, SP'))throw new Error('City list missing Campinas');
