@@ -37,7 +37,7 @@ test('segment cache key isolates direction, date, and provider route slugs',asyn
  // Cold requests are retained by exact source direction and requested date.
  for(const [from,to,date] of [['taubate','ribeirao-preto','2026-10-14'],
    ['ribeirao-preto','taubate','2026-10-14'],['taubate','ribeirao-preto','2026-10-15']]){
-  await api.worker.fetch(new Request(`https://rua-nossa.example/api/exists?date=${date}&origin=${from}&destination=${to}&mode=transfers&maxTransfers=2&maxWait=90`),
+  await api.worker.fetch(new Request(`https://duas-rotas.example/api/exists?date=${date}&origin=${from}&destination=${to}&mode=transfers&maxTransfers=2&maxWait=90`),
    {ASSETS:{fetch:async input=>Response.json(new URL(input).pathname==='/rn-hub-index.json'?index:cities)},RN_HUB_ENABLED:'1',RIDES_CACHE:cache});
  }
  const keys=[...cache.store.keys()];
