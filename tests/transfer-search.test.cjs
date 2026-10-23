@@ -48,7 +48,11 @@ test('orçamento de buscas distribui finalizações entre hubs',async()=>{
 });
 
 test('Formosa, GO usa o slug canônico do BuscaOnibus',()=>{
- const ctx=run(async()=>[]);
+ const start=source.indexOf('const BUSCA_ONIBUS_SLUG_OVERRIDES=');
+ const end=source.indexOf('\nfunction sourceUnavailable(',start);
+ assert.ok(start>=0&&end>start,'Normalizador do BuscaOnibus encontrado');
+ const ctx={};
+ vm.runInNewContext(source.slice(start,end),ctx);
  assert.equal(ctx.fromBuscaSlug(cities,'formosa'),'formosa-go');
  assert.equal(ctx.fromBuscaSlug(cities,'brasilia'),'brasilia');
 });
