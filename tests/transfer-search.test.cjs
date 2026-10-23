@@ -46,3 +46,13 @@ test('orçamento de buscas distribui finalizações entre hubs',async()=>{
  const result=await ctx.findRoutes('taubate','pirassununga','2026-10-14','Taubaté, SP','Pirassununga, SP',5,60,1,geo,false);
  assert.ok(result.routes.some(r=>r.legs[0].to==='campinas'),JSON.stringify({calls,routes:result.routes}));
 });
+
+test('Formosa, GO usa o slug canônico do BuscaOnibus',()=>{
+ const start=source.indexOf('const BUSCA_ONIBUS_SLUG_OVERRIDES=');
+ const end=source.indexOf('\nfunction sourceUnavailable(',start);
+ assert.ok(start>=0&&end>start,'Normalizador do BuscaOnibus encontrado');
+ const ctx={};
+ vm.runInNewContext(source.slice(start,end),ctx);
+ assert.equal(ctx.fromBuscaSlug(cities,'formosa'),'formosa-go');
+ assert.equal(ctx.fromBuscaSlug(cities,'brasilia'),'brasilia');
+});
