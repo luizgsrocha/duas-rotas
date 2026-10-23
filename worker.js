@@ -225,7 +225,7 @@ function selectHubs(cities,from,to){
 }
 function waitMinutes(arrival,departure){const a=minutes(arrival),b=minutes(departure);if(a<0||b<0)return-1;return b>=a?b-a:b+1440-a}
 function makeRoute(legs){return{legs,totalPrice:legs.reduce((s,x)=>s+price(x.ride.price),0)}}
-function fromBuscaSlug(cities,slug){const c=cities.find(x=>x.slug===slug);return c&&c.buscaOnibusSlug||slug}
+const BUSCA_ONIBUS_SLUG_OVERRIDES=Object.freeze({formosa:"formosa-go"});\nfunction fromBuscaSlug(cities,slug){const c=cities.find(x=>x.slug===slug);return c&&c.buscaOnibusSlug||BUSCA_ONIBUS_SLUG_OVERRIDES[slug]||slug}
 function sourceUnavailable({kind="unknown",status=null}={}){const error=new Error("A fonte de caronas está indisponível. Tente novamente em alguns instantes.");error.name="SourceUnavailableError";error.sourceFailure=kind;error.upstreamStatus=status;return error}
 function searchTimeout(){const error=new Error("A consulta demorou demais. Tente novamente.");error.name="SearchTimeoutError";return error}
 async function fetchRidePage(url,options,deadline=Infinity){
