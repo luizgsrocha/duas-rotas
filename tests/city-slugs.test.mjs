@@ -5,11 +5,35 @@ import {loadWorker,query,cities as baseCities} from './helpers/worker.mjs';
 
 const catalog=JSON.parse(readFileSync(new URL('../cities.json',import.meta.url),'utf8'));
 const sp=catalog.filter(city=>city.uf==='SP');
+const rj=catalog.filter(city=>city.uf==='RJ');
 
 test('São Paulo catalog keeps 645 municipalities and 372 provider overrides',()=>{
   assert.equal(sp.length,645);
   assert.equal(sp.filter(city=>city.buscaOnibusSlug).length,372);
   assert.equal(new Set(sp.map(city=>city.slug)).size,645);
+});
+
+test('Rio de Janeiro catalog keeps 92 municipalities and 30 provider overrides',()=>{
+  assert.equal(rj.length,92);
+  assert.equal(rj.filter(city=>city.buscaOnibusSlug).length,30);
+  assert.equal(new Set(rj.map(city=>city.slug)).size,92);
+});
+
+test('Rio de Janeiro provider overrides remain separate from internal slugs',()=>{
+  const expected={
+    aperibe:'aperibe-rj',
+    'armacao-dos-buzios':'armacao-dos-buzios-rj',
+    'bom-jardim':'bom-jardim-rj',
+    mesquita:'mesquita-rj',
+    'rio-claro':'rio-claro-rj',
+    valenca:'valenca-rj'
+  };
+  for(const [slug,buscaOnibusSlug] of Object.entries(expected)){
+    const city=rj.find(item=>item.slug===slug);
+    assert.ok(city,slug);
+    assert.equal(city.slug,slug);
+    assert.equal(city.buscaOnibusSlug,buscaOnibusSlug);
+  }
 });
 
 test('confirmed BuscaOnibus exceptions are stored separately from internal slugs',()=>{
