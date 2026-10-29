@@ -1,0 +1,34 @@
+name: Audit SP city routes (BuscaOnibus)
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'Number of destinations to test (1-644)'
+        required: false
+        default: '644'
+      base_url:
+        description: 'Deployed Worker base URL'
+        required: true
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Audit Taubaté to SP destinations
+        env:
+          BASE_URL: ${{ inputs.base_url }}
+          LIMIT: ${{ inputs.limit }}
+          DELAY_MS: '1200'
+        run: node scripts/audit-sp-slugs.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sp-city-audit
+          path: audit-results/
+          if-no-files-found: warn
