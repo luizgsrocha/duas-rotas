@@ -10,7 +10,19 @@ const key=city=>`${city.uf}|${city.slug}`;
 const hash=value=>createHash('sha256').update(JSON.stringify(value)).digest('hex');
 const successful=new Set(['valid','mapped_valid','override_needed']);
 const capitalByUf={AC:'rio-branco',AL:'maceio',AP:'macapa',AM:'manaus',BA:'salvador',CE:'fortaleza',DF:'brasilia',ES:'vitoria',GO:'goiania',MA:'sao-luis',MT:'cuiaba',MS:'campo-grande',MG:'belo-horizonte',PA:'belem',PB:'joao-pessoa',PR:'curitiba',PE:'recife',PI:'teresina',RJ:'rio-de-janeiro',RN:'natal',RS:'porto-alegre',RO:'porto-velho',RR:'boa-vista',SC:'florianopolis',SP:'sao-paulo',SE:'aracaju',TO:'palmas'};
-export function metadata(html,field){return html.match(new RegExp(`["']${field}["']\\s*:\\s*["']([^"']*)["']`))?.[1]||null}
+export function metadata(html,field){
+  const escapedField=field.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const match=html.match(new RegExp(`(["'])${escapedField}\\1\\s*:\\s*(["'])((?:\\\\.|(?!\\2)[\\s\\S])*)\\2`));
+  if(!match)return null;
+  if(match[2]==='"'){
+    try{return JSON.parse(`"${match[3]}"`)}catch{return null}
+  }
+  return match[3].replace(/\\(u[0-9a-fA-F]{4}|x[0-9a-fA-F]{2}|[\s\S])/g,(_,escape)=>{
+    if(escape.startsWith('u'))return String.fromCharCode(parseInt(escape.slice(1),16));
+    if(escape.startsWith('x'))return String.fromCharCode(parseInt(escape.slice(1),16));
+    return ({n:'\n',r:'\r',t:'\t',b:'\b',f:'\f',v:'\v'})[escape]??escape;
+  });
+}
 const normalizedName=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
 export function classify(response,html,city,expectedId){
   if(response.status===403)return 'provider_blocked';

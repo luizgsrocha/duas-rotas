@@ -4,7 +4,7 @@ import {mkdtemp,readFile,writeFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {gunzipSync} from 'node:zlib';
-import {runAudit,classify} from '../scripts/audit-national-slugs.mjs';
+import {runAudit,classify,metadata} from '../scripts/audit-national-slugs.mjs';
 const city={name:'Adolfo, SP',uf:'SP',slug:'adolfo'};
 const html=(name='Adolfo',uf='SP',id='123')=>`'destinationState': '${uf}', 'destinationId': '${id}', 'destinationName': '${name}'`;
 async function setup(t){const outputDir=await mkdtemp(join(tmpdir(),'slug-audit-'));t.after(()=>rm(outputDir,{recursive:true,force:true}));return {catalog:[city],travelDate:'2026-11-05',outputDir,delayMs:0,concurrency:1,sleepImpl:async()=>{},log:()=>{}}}
@@ -76,4 +76,15 @@ test('invalid concurrency and corrupted checkpoint fail explicitly',async t=>{
  await assert.rejects(runAudit({...options,concurrency:0}),/CONCURRENCY/);
  await writeFile(join(options.outputDir,'checkpoint.jsonl'),'{broken}\n{}\n');
  await assert.rejects(runAudit(options),/Malformed checkpoint row 1/);
+});
+
+test('metadata preserves apostrophes and escaped quotes with matching delimiters',()=>{
+ const destination={name:"Aparecida d'Oeste, SP",uf:'SP',slug:'aparecida-d-oeste'};
+ const json=JSON.stringify({destinationName:"Aparecida d'Oeste",destinationState:'SP'});
+ assert.equal(metadata(json,'destinationName'),"Aparecida d'Oeste");
+ assert.equal(classify(new Response(),json,destination),'recognized');
+ assert.equal(metadata(String.raw`'destinationName': 'Aparecida d\'Oeste'`,'destinationName'),"Aparecida d'Oeste");
+ assert.equal(metadata(JSON.stringify({destinationName:'Cidade "Nova"'}),'destinationName'),'Cidade "Nova"');
+ assert.equal(metadata(String.raw`'destinationName': 'S\u00e3o Jo\x61o'`,'destinationName'),'São Joao');
+ assert.equal(metadata(`'destinationName': "Olho d'Água"`,'destinationName'),"Olho d'Água");
 });
