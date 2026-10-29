@@ -1,0 +1,36 @@
+name: Audit national city slugs (BuscaOnibus)
+on:
+  workflow_dispatch:
+    inputs:
+      travel_date:
+        description: 'Travel date (YYYY-MM-DD), explicit for reproducibility'
+        required: true
+      identities_path:
+        description: 'Optional checked-in JSON: UF|slug -> independently verified provider ID'
+        required: false
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Audit provider identity independently of ride availability
+        env:
+          TRAVEL_DATE: ${{ inputs.travel_date }}
+          IDENTITIES_PATH: ${{ inputs.identities_path }}
+          DELAY_MS: '1200'
+          CONCURRENCY: '8'
+        run: node scripts/audit-national-slugs.mjs
+      - name: Preserve report and checkpoint, including interrupted runs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: national-slug-audit-${{ github.sha }}-${{ github.run_id }}
+          path: audit-results/national/
+          if-no-files-found: warn
+          retention-days: 90
