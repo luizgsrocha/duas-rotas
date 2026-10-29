@@ -56,8 +56,6 @@ async function findRoutes(origin,target,date,originName,targetName,minWait,maxWa
    let result;
    try{result=await getDirectRides(a.slug,b.slug,date,a.buscaOnibusSlug||a.slug,b.buscaOnibusSlug||b.slug,deadline,options.rnHubEnabled?60:0,{RIDES_CACHE:options.segmentCache});diagnostics.completed++;diagnostics.queriedPairs.push(key)}
    catch(error){if(!["SourceUnavailableError","SearchTimeoutError"].includes(error.name))throw error;incomplete=true;diagnostics.failed++;diagnostics.queriedPairs.push(key+" [failed]");if(error.name==="SourceUnavailableError")diagnostics.sourceFailures.push({pair:key,kind:error.sourceFailure||"unknown",status:error.upstreamStatus??null,category:sourceFailureCategory(error)});result=[]}
-   try{result=await getDirectRides(a.slug,b.slug,date,a.buscaOnibusSlug||a.slug,b.buscaOnibusSlug||b.slug,deadline,options.rnHubEnabled?60:0,{RIDES_CACHE:options.segmentCache});diagnostics.completed++;diagnostics.queriedPairs.push(key)}
-   catch(error){if(!["SourceUnavailableError","SearchTimeoutError"].includes(error.name))throw error;incomplete=true;diagnostics.failed++;diagnostics.queriedPairs.push(key+" [failed]");result=[]}
    cache.set(key,result);
    return result;
  }
@@ -227,7 +225,7 @@ function waitMinutes(arrival,departure){const a=minutes(arrival),b=minutes(depar
 function makeRoute(legs){return{legs,totalPrice:legs.reduce((s,x)=>s+price(x.ride.price),0)}}
 const BUSCA_ONIBUS_SLUG_OVERRIDES=Object.freeze({formosa:"formosa-go"});
 function fromBuscaSlug(cities,slug){const c=cities.find(x=>x.slug===slug);return c&&c.buscaOnibusSlug||BUSCA_ONIBUS_SLUG_OVERRIDES[slug]||slug}
-function sourceUnavailable({kind="unknown",status=null}={}){const error=new Error("A fonte de caronas está indisponível. Tente novamente em alguns instantes.");error.name="SourceUnavailableError";error.sourceFailure=kind;error.upstreamStatus=status;return error}
+function sourceUnavailable({kind="unknown",status=null}={}){const error=new Error(status===403?"A fonte de caronas recusou a consulta. Não foi possível verificar a disponibilidade. Tente novamente mais tarde.":"A fonte de caronas está indisponível. Tente novamente em alguns instantes.");error.name="SourceUnavailableError";error.sourceFailure=kind;error.upstreamStatus=status;return error}
 function sourceFailureCategory(error){if(error.sourceFailure!=="http")return error.sourceFailure==="network"?"provider_network":"provider_unavailable";if(error.upstreamStatus===403)return"provider_blocked";if(error.upstreamStatus===404)return"slug_not_found";return"upstream_http"}
 function searchTimeout(){const error=new Error("A consulta demorou demais. Tente novamente.");error.name="SearchTimeoutError";return error}
 async function fetchRidePage(url,options,deadline=Infinity){
