@@ -5,7 +5,7 @@ export default{async fetch(request,env){
  const u=new URL(request.url);
  if(u.pathname==="/api/blablacar-lab")return blablacarLab(request,env);
  if(u.pathname==="/api/blablacar-trip-lab")return blablacarTripLab(request);
- if(u.pathname==="/api/cities"){try{const data=await loadLocalCities(env,request);return json(data.map(({name,slug,uf})=>({name,slug,uf})))}catch{return json({error:"Falha ao carregar municípios"},502)}}
+ if(u.pathname==="/api/cities"){try{const data=await loadLocalCities(env,request);return json(data.map(({name,slug,uf,buscaOnibusSlug})=>({name,slug,uf,buscaOnibusSlug:buscaOnibusSlug||slug})))}catch{return json({error:"Falha ao carregar municípios"},502)}}
  if(u.pathname!=="/api/exists"){const r=await env.ASSETS.fetch(request),h=new Headers(r.headers);if(u.pathname==="/"||u.pathname.endsWith(".html"))h.set("Cache-Control","no-cache, no-store, must-revalidate");else if(u.pathname.endsWith(".js")||u.pathname.endsWith(".css"))h.set("Cache-Control","public, max-age=0, must-revalidate");return new Response(r.body,{status:r.status,statusText:r.statusText,headers:h})}
  try{
   const date=u.searchParams.get("date"),origin=u.searchParams.get("origin")||"pirassununga",key=u.searchParams.get("destination")||"taubate",originName=u.searchParams.get("originName")||displayName(origin),destinationName=u.searchParams.get("destinationName")||displayName(key),minWait=parseWait(u.searchParams.get("minWait"),DEFAULT_MIN_WAIT),maxWait=parseWait(u.searchParams.get("maxWait"),DEFAULT_MAX_WAIT),maxTransfers=parseWait(u.searchParams.get("maxTransfers"),DEFAULT_MAX_TRANSFERS);
@@ -26,7 +26,7 @@ export default{async fetch(request,env){
   }
   const direct=routes.filter(x=>x.legs.length===1),transfers=routes.filter(x=>x.legs.length>1);
   return json({date,origin,originName,destination:key,destinationName,mode,exists:routes.length>0,count:routes.length,directCount:direct.length,transferCount:transfers.length,source:"BuscaOnibus",incomplete,diagnostics:u.searchParams.get("debug")==="1"?diagnostics:undefined,warning:incomplete?"Alguns trechos não puderam ser consultados. Os resultados podem estar incompletos.":null,routes});
-  }catch(e){if(e.name==="SearchTimeoutError")return json({error:e.message,code:"SEARCH_TIMEOUT"},504);if(e.name==="SourceUnavailableError")return json({error:e.message,code:"SOURCE_UNAVAILABLE",...(u.searchParams.get("debug")==="1"?{sourceFailure:{kind:e.sourceFailure||"unknown",status:e.upstreamStatus??null}}:{})},502);return json({error:"Falha ao consultar as caronas",detail:String(e&&e.message||e)},502)}
+  }catch(e){if(e.name==="SearchTimeoutError")return json({error:e.message,code:"SEARCH_TIMEOUT"},504);if(e.name==="SourceUnavailableError")return json({error:e.message,code:"SOURCE_UNAVAILABLE",...(u.searchParams.get("debug")==="1"?{sourceFailure:{kind:e.sourceFailure||"unknown",status:e.upstreamStatus??null,category:sourceFailureCategory(e)}}:{})},502);return json({error:"Falha ao consultar as caronas",detail:String(e&&e.message||e)},502)}
 }};
 // BRG v0.7.1: bounded, time-aware graph search with fixed and geographic hubs.
 const HUB_SLUGS=new Set(["sao-paulo","campinas","sao-jose-dos-campos","sorocaba","ribeirao-preto","jundiai","piracicaba","bauru","sao-jose-do-rio-preto","araraquara","limeira","americana","belo-horizonte","uberlandia","juiz-de-fora","pocos-de-caldas","rio-de-janeiro","niteroi","volta-redonda","curitiba","londrina","maringa","ponta-grossa","cascavel"]);
@@ -55,7 +55,7 @@ async function findRoutes(origin,target,date,originName,targetName,minWait,maxWa
    queries++;
    let result;
    try{result=await getDirectRides(a.slug,b.slug,date,a.buscaOnibusSlug||a.slug,b.buscaOnibusSlug||b.slug,deadline,options.rnHubEnabled?60:0,{RIDES_CACHE:options.segmentCache});diagnostics.completed++;diagnostics.queriedPairs.push(key)}
-   catch(error){if(!["SourceUnavailableError","SearchTimeoutError"].includes(error.name))throw error;incomplete=true;diagnostics.failed++;diagnostics.queriedPairs.push(key+" [failed]");if(error.name==="SourceUnavailableError")diagnostics.sourceFailures.push({pair:key,kind:error.sourceFailure||"unknown",status:error.upstreamStatus??null});result=[]}
+   catch(error){if(!["SourceUnavailableError","SearchTimeoutError"].includes(error.name))throw error;incomplete=true;diagnostics.failed++;diagnostics.queriedPairs.push(key+" [failed]");if(error.name==="SourceUnavailableError")diagnostics.sourceFailures.push({pair:key,kind:error.sourceFailure||"unknown",status:error.upstreamStatus??null,category:sourceFailureCategory(error)});result=[]}
    try{result=await getDirectRides(a.slug,b.slug,date,a.buscaOnibusSlug||a.slug,b.buscaOnibusSlug||b.slug,deadline,options.rnHubEnabled?60:0,{RIDES_CACHE:options.segmentCache});diagnostics.completed++;diagnostics.queriedPairs.push(key)}
    catch(error){if(!["SourceUnavailableError","SearchTimeoutError"].includes(error.name))throw error;incomplete=true;diagnostics.failed++;diagnostics.queriedPairs.push(key+" [failed]");result=[]}
    cache.set(key,result);
@@ -228,6 +228,7 @@ function makeRoute(legs){return{legs,totalPrice:legs.reduce((s,x)=>s+price(x.rid
 const BUSCA_ONIBUS_SLUG_OVERRIDES=Object.freeze({formosa:"formosa-go"});
 function fromBuscaSlug(cities,slug){const c=cities.find(x=>x.slug===slug);return c&&c.buscaOnibusSlug||BUSCA_ONIBUS_SLUG_OVERRIDES[slug]||slug}
 function sourceUnavailable({kind="unknown",status=null}={}){const error=new Error("A fonte de caronas está indisponível. Tente novamente em alguns instantes.");error.name="SourceUnavailableError";error.sourceFailure=kind;error.upstreamStatus=status;return error}
+function sourceFailureCategory(error){if(error.sourceFailure!=="http")return error.sourceFailure==="network"?"provider_network":"provider_unavailable";if(error.upstreamStatus===403)return"provider_blocked";if(error.upstreamStatus===404)return"slug_not_found";return"upstream_http"}
 function searchTimeout(){const error=new Error("A consulta demorou demais. Tente novamente.");error.name="SearchTimeoutError";return error}
 async function fetchRidePage(url,options,deadline=Infinity){
  const remaining=Math.min(30000,deadline-Date.now());
