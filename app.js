@@ -172,11 +172,11 @@ async function check(){
  try{
   const search=await runSearchModes(fetchMode,maxTransfers,state=>{
    if(state.phase==="direct"){
-    if(state.direct){lastResults=state.direct;renderLastResults();$("#status").textContent=state.direct.count?state.direct.count+" carona(s) direta(s) encontrada(s).":"Nenhuma carona direta encontrada."}
+    if(state.direct){lastResults=state.direct;renderLastResults();$("#status").textContent=state.direct.incomplete?(state.direct.warning||"Não foi possível concluir a busca direta."):state.direct.count?state.direct.count+" carona(s) direta(s) encontrada(s).":"Nenhuma carona direta encontrada."}
     else{$("#status").textContent=maxTransfers>0?"A consulta direta falhou. Continuando a busca por baldeações…":"Não foi possível consultar caronas diretas.";lastResults={originName,destinationName,routes:[],count:0,incomplete:true};renderLastResults()}
    }
    if(state.phase==="transfers"){
-    $("#status").textContent=(state.directError?"Busca direta indisponível. ":state.direct?.count?state.direct.count+" carona(s) direta(s). ":"Nenhuma carona direta encontrada. ")+"Buscando baldeações…";
+    $("#status").textContent=(state.directError||state.direct?.incomplete?"Busca direta incompleta. ":state.direct?.count?state.direct.count+" carona(s) direta(s). ":"Nenhuma carona direta encontrada. ")+"Buscando baldeações…";
     $("#transferLoading").hidden=false;
    }
   });
@@ -191,7 +191,7 @@ async function check(){
    return;
   }
   if(incomplete){
-   const reasons=[search.directError?"A consulta direta falhou: "+search.directError.message:"",transferError?"A busca de baldeações ficou incompleta: "+transferError:""].filter(Boolean).join(" ");
+   const reasons=[search.directError?"A consulta direta falhou: "+search.directError.message:search.direct?.incomplete?(search.direct.warning||"A busca direta ficou incompleta."):"",transferError?"A busca de baldeações ficou incompleta: "+transferError:""].filter(Boolean).join(" ");
    $("#status").textContent=routes.length?routes.length+" opção(ões) verificada(s), mas a busca ficou incompleta. "+reasons:"Não foi possível concluir toda a busca. "+(reasons||"Tente novamente em instantes.");
    return;
   }
@@ -200,7 +200,7 @@ async function check(){
  finally{$("#transferLoading").hidden=true;$("#search").disabled=false}
 }
 
-function renderLastResults(){if(!lastResults)return;const mode=$("#sort").value;$("#results").innerHTML=[lastResults].map(d=>{const routes=sortRoutes(d.routes||[],mode);return '<section class="destination-result"><h2>'+esc(d.destinationName)+'</h2><small>'+esc(d.originName)+' → '+esc(d.destinationName)+' · '+formatDate(lastDate)+'</small>'+(routes.length?groupCards(routes):(d.incomplete?'<article class="route"><h3>Busca incompleta</h3><p>Não foi possível verificar todas as conexões. Tente novamente.</p></article>':'<article class="route"><h3>Nenhuma rota encontrada</h3></article>'))+'</section>'}).join("")}
+function renderLastResults(){if(!lastResults)return;const mode=$("#sort").value;$("#results").innerHTML=[lastResults].map(d=>{const routes=sortRoutes(d.routes||[],mode);return '<section class="destination-result"><h2>'+esc(d.destinationName)+'</h2><small>'+esc(d.originName)+' → '+esc(d.destinationName)+' · '+formatDate(lastDate)+'</small>'+(routes.length?groupCards(routes):(d.incomplete?'<article class="route"><h3>Busca incompleta</h3><p>Não foi possível concluir a consulta à fonte de caronas. A disponibilidade não foi confirmada. Tente novamente.</p></article>':'<article class="route"><h3>Nenhuma rota encontrada</h3></article>'))+'</section>'}).join("")}
 function sortRoutes(routes,mode){const list=[...routes];if(mode==="fastest")return list.sort((a,b)=>routeDuration(a)-routeDuration(b));if(mode==="cheapest")return list.sort((a,b)=>routePrice(a)-routePrice(b));if(mode==="fewest")return list.sort((a,b)=>a.legs.length-b.legs.length||routeDuration(a)-routeDuration(b));return list.sort((a,b)=>a.legs.length-b.legs.length||routeDuration(a)-routeDuration(b)||routePrice(a)-routePrice(b))}function routeDuration(route){if(!route.legs.length)return Infinity;const a=mins(route.legs[0].ride.departure),b=mins(route.legs.at(-1).ride.arrival);if(a<0||b<0)return Infinity;return b>=a?b-a:b+1440-a}function routePrice(route){if(Number.isFinite(route.totalPrice))return route.totalPrice;return route.legs.reduce((n,x)=>n+(parseFloat(String(x.ride.price||"0").replace(",","."))||0),0)}
 function connectionSummary(route){if(route.legs.length<2)return "";const waits=[];for(let i=1;i<route.legs.length;i++){const previous=route.legs[i-1],next=route.legs[i],start=mins(previous.ride.arrival),end=mins(next.ride.departure);if(start<0||end<0){waits.push("Espera não informada em "+previous.toName);continue}const duration=(end-start+1440)%1440;waits.push("Espera em "+previous.toName+": "+waitText(duration))}return '<span class="combination-waits">'+waits.map(esc).join(" · ")+'</span>'}
 function routeCard(route){const legs=route.legs;if(!legs.length)return "";const first=legs[0],last=legs.at(-1),departure=first.ride.departure||"—",arrival=last.ride.arrival||"—",duration=routeDuration(route),durationText=Number.isFinite(duration)?waitText(duration):"Duração indisponível",connections=legs.length-1,hasPrices=Number.isFinite(route.totalPrice)||legs.every(x=>x.ride.price!==undefined&&x.ride.price!==null&&String(x.ride.price).trim()!=="");const price=hasPrices?"R$ "+routePrice(route).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2}):"Preço indisponível";return '<details class="route-combination"><summary><span class="combination-top"><span class="combination-tag">'+(connections===0?"Direta":connections+" "+(connections===1?"baldeação":"baldeações"))+'</span><strong class="combination-price">'+esc(price)+'</strong></span><span class="combination-times"><span><strong>'+esc(departure)+'</strong><small>'+esc(first.fromName)+'</small></span><span class="combination-duration"><small>'+esc(durationText)+'</small><span aria-hidden="true">🚗 ───→</span></span><span class="combination-arrival"><strong>'+esc(arrival)+'</strong><small>'+esc(last.toName)+'</small></span></span>'+connectionSummary(route)+'<span class="combination-expand">Ver percurso completo <span aria-hidden="true">⌄</span></span></summary><div class="combination-details">'+renderNodes(buildTree([route]),0)+'</div></details>'}
