@@ -85,7 +85,16 @@ test('debug response identifies upstream HTTP failures without exposing details 
   const normal=await query(api,{mode:'direct'});
   const debug=await query(api,{mode:'direct',debug:'1'});
   assert.equal(normal.body.sourceFailure,undefined);
-  assert.deepEqual(debug.body.sourceFailure,{kind:'http',status:503});
+  assert.deepEqual(debug.body.sourceFailure,{kind:'http',status:503,category:'upstream_http'});
+});
+
+test('debug response distinguishes provider blocking from a missing provider slug',async()=>{
+  for(const [status,category] of [[403,'provider_blocked'],[404,'slug_not_found']]){
+    const api=loadWorker({fetch:async()=>new Response('Unavailable',{status})});
+    const result=await query(api,{mode:'direct',debug:'1'});
+    assert.equal(result.status,502);
+    assert.equal(result.body.sourceFailure.category,category);
+  }
 });
 
 test('transfer diagnostics record safe upstream failure status per segment',async()=>{
@@ -93,7 +102,7 @@ test('transfer diagnostics record safe upstream failure status per segment',asyn
   const {body}=await query(api,{mode:'transfers',debug:'1'});
   assert.equal(body.incomplete,true);
   assert.ok(body.diagnostics.sourceFailures.length>0);
-  assert.ok(body.diagnostics.sourceFailures.every(x=>x.kind==='http'&&x.status===403&&!('url' in x)));
+  assert.ok(body.diagnostics.sourceFailures.every(x=>x.kind==='http'&&x.status===403&&x.category==='provider_blocked'&&!('url' in x)));
 });
 
 test('direct overnight ride remains available',async()=>{
