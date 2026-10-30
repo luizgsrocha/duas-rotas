@@ -46,17 +46,14 @@ test('a larger transfer limit does not discard a valid first-hop hub',async()=>{
 
 test('national selector covers known useful regional hubs on all reference corridors',()=>{
  const api=loadWorker();
- let currentHits=0,rnHubHits=0;
+ let rnHubHits=0;
  for(const [from,fromUf,to,toUf,expected] of cases){
    const origin=city(from,fromUf),destination=city(to,toUf);
-   const legacy=api.selectHubs(cities,origin,destination);
    const selected=api.selectRnHubCandidates(cities,origin,destination,index);
-   currentHits+=Number(legacy.some(item=>item.slug===expected));
    rnHubHits+=Number(selected.some(item=>item.slug===expected));
    assert.ok(selected.length<=12);
  }
  assert.equal(rnHubHits,cases.length);
- assert.ok(rnHubHits>currentHits,{currentHits,rnHubHits});
 });
 
 test('context remains dominant enough to retain small regional connectors',()=>{
@@ -128,9 +125,11 @@ test('RN-HUB reports unavailable sources without inventing a connection',async()
  assert.ok(result.body.warning);
 });
 
-test('feature flag off keeps the legacy selector and does not need the RN-HUB asset',async()=>{
+test('feature flag off does not revive an intermediate-city selector',async()=>{
  const upstream=source({}),api=loadWorker(upstream);
  const result=await query(api,{geo:cities,hubIndex:null,rnHubEnabled:false,
    origin:'taubate',destination:'uberlandia',debug:'1'});
- assert.match(result.body.diagnostics.algorithm,/^legacy-/);
+ assert.equal(result.body.diagnostics.algorithm,'cache-only');
+ assert.deepEqual(result.body.diagnostics.selectedHubs,[]);
+ assert.equal(upstream.calls.length,0);
 });

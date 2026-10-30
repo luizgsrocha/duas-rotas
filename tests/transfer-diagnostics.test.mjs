@@ -14,6 +14,7 @@ const cities=[
 ];
 function run(pages,maxTransfers=2){
  const queried=[];
+ const hubIndex={records:{'taubate:':[500,50_000,'3B',5],'campinas:':[500,50_000,'3B',5],'ribeirao-preto:':[500,50_000,'3B',5]}};
  const context={URL,Headers,Response,AbortController,setTimeout,clearTimeout,Date,console,fetch:async url=>{
   const u=new URL(url),parts=u.pathname.split("/");
   const match=parts[1]==="horario"&&parts.length>=4?[null,parts[2],parts[3]]:null;
@@ -25,7 +26,7 @@ function run(pages,maxTransfers=2){
  }};
  vm.createContext(context);
  vm.runInContext(source+';globalThis.__findRoutes=findRoutes;',context);
- return context.__findRoutes('taubate','ribeirao-preto','2026-10-13','Taubaté','Ribeirão Preto',5,60,maxTransfers,cities,false).then(result=>({result,queried}));
+ return context.__findRoutes('taubate','ribeirao-preto','2026-10-13','Taubaté','Ribeirão Preto',5,60,maxTransfers,cities,false,{rnHubEnabled:true,hubIndex}).then(result=>({result,queried}));
 }
 test('Campinas connection is queried and returned when waits match',async()=>{
  const {result,queried}=await run({'taubate|campinas':[['08:00','10:00']],'campinas|ribeirao-preto':[['10:30','12:30']]});

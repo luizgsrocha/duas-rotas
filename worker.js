@@ -20,29 +20,26 @@ export default{async fetch(request,env){
   const geo=await loadLocalCities(env,request),rnHubEnabled=env.RN_HUB_ENABLED==="1";
   if(mode==="direct"||maxTransfers===0){const rides=await getDirectRides(origin,key,date,fromBuscaSlug(geo,origin),fromBuscaSlug(geo,key),Infinity,0,env);routes=rides.map(ride=>makeRoute([{from:origin,to:key,fromName:originName,toName:destinationName,ride}]));if(mode==="transfers")routes=[]}
   else{
-   const strategy=classifySearchStrategy(geo,origin,key),hubIndex=rnHubEnabled?await loadRnHubIndex(env,request):null;
-   const search=await findRoutes(origin,key,date,originName,destinationName,minWait,maxWait,maxTransfers,geo,mode!=="transfers",strategy,{rnHubEnabled:rnHubEnabled&&!!hubIndex,hubIndex,segmentCache:env.RIDES_CACHE});
+   const hubIndex=rnHubEnabled?await loadRnHubIndex(env,request):null;
+   const search=await findRoutes(origin,key,date,originName,destinationName,minWait,maxWait,maxTransfers,geo,mode!=="transfers",{rnHubEnabled:rnHubEnabled&&!!hubIndex,hubIndex,segmentCache:env.RIDES_CACHE});
    routes=search.routes;incomplete=search.incomplete;diagnostics=search.diagnostics;if(mode==="transfers")routes=routes.filter(x=>x.legs.length>1);
   }
   const direct=routes.filter(x=>x.legs.length===1),transfers=routes.filter(x=>x.legs.length>1);
   return json({date,origin,originName,destination:key,destinationName,mode,exists:routes.length>0,count:routes.length,directCount:direct.length,transferCount:transfers.length,source:"BuscaOnibus",incomplete,diagnostics:u.searchParams.get("debug")==="1"?diagnostics:undefined,warning:incomplete?"Alguns trechos não puderam ser consultados. Os resultados podem estar incompletos.":null,routes});
   }catch(e){if(e.name==="SearchTimeoutError")return json({error:e.message,code:"SEARCH_TIMEOUT"},504);if(e.name==="SourceUnavailableError")return json({error:e.message,code:"SOURCE_UNAVAILABLE",...(u.searchParams.get("debug")==="1"?{sourceFailure:{kind:e.sourceFailure||"unknown",status:e.upstreamStatus??null,category:sourceFailureCategory(e)}}:{})},502);return json({error:"Falha ao consultar as caronas",detail:String(e&&e.message||e)},502)}
 }};
-// BRG v0.7.1: bounded, time-aware graph search with fixed and geographic hubs.
-const HUB_SLUGS=new Set(["sao-paulo","campinas","sao-jose-dos-campos","sorocaba","ribeirao-preto","jundiai","piracicaba","bauru","sao-jose-do-rio-preto","araraquara","limeira","americana","belo-horizonte","uberlandia","juiz-de-fora","pocos-de-caldas","rio-de-janeiro","niteroi","volta-redonda","curitiba","londrina","maringa","ponta-grossa","cascavel"]);
-const BRG_BEAM_WIDTH=12,BRG_MAX_HUBS=10,BRG_MAX_QUERIES=55,BRG_MAX_RESULTS=80,MAX_GEO_HUBS=6;
-async function findRoutes(origin,target,date,originName,targetName,minWait,maxWait,maxTransfers,geo,includeDirect=true,strategy="short",options={}){
+// Bounded, time-aware graph search over RN-HUB and proven cached edges.
+const BRG_BEAM_WIDTH=12,BRG_MAX_QUERIES=55,BRG_MAX_RESULTS=80;
+async function findRoutes(origin,target,date,originName,targetName,minWait,maxWait,maxTransfers,geo,includeDirect=true,options={}){
  const deadline=Date.now()+300000;
- const diagnostics={algorithm:options.rnHubEnabled?RN_HUB_VERSION:`legacy-${strategy}`,planned:0,completed:0,failed:0,backwardProbes:0,backwardReachable:0,skippedBudget:0,skippedDepthBudget:0,skippedBeam:0,skippedDetour:0,rejectedWait:0,queryLimit:BRG_MAX_QUERIES,selectedHubs:[],cachedHubs:[],queriedPairs:[],skippedPairs:[],sourceFailures:[]};
+ const diagnostics={algorithm:options.rnHubEnabled?RN_HUB_VERSION:"cache-only",planned:0,completed:0,failed:0,backwardProbes:0,backwardReachable:0,skippedBudget:0,skippedDepthBudget:0,skippedBeam:0,skippedDetour:0,rejectedWait:0,queryLimit:BRG_MAX_QUERIES,selectedHubs:[],cachedHubs:[],queriedPairs:[],skippedPairs:[],sourceFailures:[]};
  const recordSkip=(reason,key)=>{diagnostics[reason]++;if(diagnostics.skippedPairs.length<100)diagnostics.skippedPairs.push({pair:key,reason})};
  const direct=includeDirect?await getDirectRides(origin,target,date,fromBuscaSlug(geo,origin),fromBuscaSlug(geo,target),deadline,options.rnHubEnabled?60:0,{RIDES_CACHE:options.segmentCache}):[];
  const routes=direct.map(ride=>makeRoute([{from:origin,to:target,fromName:originName,toName:targetName,ride}]));
  const from=geo.find(c=>c.slug===origin),to=geo.find(c=>c.slug===target);
  if(!from||!to)return{routes,incomplete:false,diagnostics};
- let hubs;
- try{hubs=options.rnHubEnabled?selectRnHubCandidates(geo,from,to,options.hubIndex):strategy==="long"?selectHubs(geo,from,to):selectBrgHubs(geo,from,to)}
- catch{hubs=[]}
- if(!hubs.length)hubs=strategy==="long"?selectHubs(geo,from,to):selectBrgHubs(geo,from,to);
+ let hubs=[];
+ if(options.rnHubEnabled)try{hubs=selectRnHubCandidates(geo,from,to,options.hubIndex)}catch{hubs=[]}
  const cachedHubs=typeof loadCachedHubs==="function"?await loadCachedHubs(options.segmentCache,date,fromBuscaSlug(geo,origin),geo):[];
  diagnostics.cachedHubs=cachedHubs.map(city=>`${city.slug}:${city.uf||""}`);
  if(cachedHubs.length)hubs=[...cachedHubs,...hubs.filter(city=>!cachedHubs.some(cached=>cached.slug===city.slug))].slice(0,BRG_BEAM_WIDTH);
@@ -50,7 +47,7 @@ async function findRoutes(origin,target,date,originName,targetName,minWait,maxWa
  const nodes=[...hubs,to],cache=new Map(),seenRoutes=new Set(),backwardReachable=new Set();
  let incomplete=false,queries=0,frontier=[{city:from,legs:[],visited:new Set([from.slug]),length:0,arrival:-1}];
  const directDistance=Math.max(1,distance(from,to));
- const maxDetour=options.rnHubEnabled?Math.min(250,Math.max(60,directDistance*.30)):strategy==="long"?Math.min(90,Math.max(15,directDistance*.18)):60;
+ const maxDetour=Math.min(250,Math.max(60,directDistance*.30));
  async function ridesBetween(a,b){
    const key=a.slug+"|"+b.slug;
    if(cache.has(key))return cache.get(key);
@@ -90,7 +87,7 @@ async function findRoutes(origin,target,date,originName,targetName,minWait,maxWa
      }
    }
    diagnostics.planned+=proposals.length;
-   proposals.sort((a,b)=>Number(b.next.slug===to.slug)-Number(a.next.slug===to.slug)||Number(backwardReachable.has(b.next.slug))-Number(backwardReachable.has(a.next.slug))||Number(HUB_SLUGS.has(b.next.slug))-Number(HUB_SLUGS.has(a.next.slug))||a.score-b.score);
+   proposals.sort((a,b)=>Number(b.next.slug===to.slug)-Number(a.next.slug===to.slug)||Number(backwardReachable.has(b.next.slug))-Number(backwardReachable.has(a.next.slug))||a.score-b.score);
    // Prioritize finishing a journey, but preserve a bounded search budget.
    // Fair scheduling: inspect at least one destination connection per arrival city
     // before spending the per-depth budget on many departures from one hub.
@@ -157,35 +154,6 @@ async function findRoutes(origin,target,date,originName,targetName,minWait,maxWa
  }
  return{routes,incomplete,diagnostics};
 }
-// Threshold is defined by the actual registered Taubaté and Ribeirão Preto coordinates.
-function classifySearchStrategy(cities,origin,target){
- const from=cities.find(c=>c.slug===origin),to=cities.find(c=>c.slug===target);
- const taubate=cities.find(c=>c.slug==="taubate"),ribeirao=cities.find(c=>c.slug==="ribeirao-preto");
- if(![from,to,taubate,ribeirao].every(c=>c&&Number.isFinite(c.lat)&&Number.isFinite(c.lng)))return "short";
- return distance(from,to)<=distance(taubate,ribeirao)+1e-9?"short":"long";
-}
-function selectBrgHubs(cities,from,to){
- const direct=Math.max(1,distance(from,to));
- const candidates=cities.filter(c=>c.slug!==from.slug&&c.slug!==to.slug&&Number.isFinite(c.lat)&&Number.isFinite(c.lng)).map(city=>{
-   const first=distance(from,city),second=distance(city,to);
-   const detour=first+second-direct,ratio=(first+second)/direct;
-   return {city,first,detour,ratio,priority:HUB_SLUGS.has(city.slug)};
- }).filter(x=>x.first>5&&distance(x.city,to)>5&&x.detour<=60);
- const fixed=candidates.filter(x=>x.priority).sort((a,b)=>a.ratio-b.ratio||a.city.slug.localeCompare(b.city.slug));
- const dynamic=candidates.filter(x=>!x.priority).sort((a,b)=>a.ratio-b.ratio||a.city.slug.localeCompare(b.city.slug));
- const selected=[];
- // Guarantee up to six fixed hubs first, then fill remaining with dynamic candidates.
- for(const x of fixed.slice(0,6)){
-   if(selected.length>=6)break;
-   if(!selected.some(y=>y.city.slug===x.city.slug))selected.push(x);
- }
- for(const x of dynamic){
-   if(selected.length>=BRG_MAX_HUBS)break;
-   if(selected.some(y=>distance(y.city,x.city)<25))continue;
-   selected.push(x);
- }
- return selected.slice(0,BRG_MAX_HUBS).map(x=>x.city);
-}
 async function loadLocalCities(env,request){const url=new URL("/cities.json",request.url),r=await env.ASSETS.fetch(url);if(!r.ok)throw new Error("Base local de cidades indisponível");const data=await r.json();if(!Array.isArray(data))throw new Error("Base local de cidades inválida");return data}
 let rnHubIndexPromise;
 async function loadRnHubIndex(env,request){
@@ -199,31 +167,6 @@ async function loadRnHubIndex(env,request){
 }
 function findGeoCity(cities,label){const n=normalizeName(label);return cities.find(x=>normalizeName(x.name)===n)}
 function normalizeName(v){return String(v||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim().toLowerCase()}
-function selectHubs(cities,from,to){
- const direct=distance(from,to);
- if(!Number.isFinite(direct)||direct<15)return [];
- // Straight-line distance is a candidate heuristic, not a road routing estimate.
- const maxDetour=Math.min(90,Math.max(15,direct*.18));
- const candidates=cities.filter(c=>{
-   if(c.slug===from.slug||c.slug===to.slug||!Number.isFinite(c.lat)||!Number.isFinite(c.lng))return false;
-   const first=distance(from,c),second=distance(c,to);
-   const progress=direct-second,detour=first+second-direct;
-   return first>=8&&second>=8&&progress>5&&progress<direct-5&&detour<=maxDetour;
- }).map(c=>{
-   const first=distance(from,c),second=distance(c,to);
-   const detour=first+second-direct;
-   // Prefer little detour and hubs distributed along the route.
-   return {city:c,detour,progress:first/direct,score:detour/Math.max(1,direct)+Math.abs(first/direct-.5)*.12};
- }).sort((a,b)=>a.score-b.score||a.city.slug.localeCompare(b.city.slug));
- const selected=[];
- // Avoid spending all six requests on neighboring towns.
- for(const candidate of candidates){
-   if(selected.some(x=>distance(x.city,candidate.city)<Math.min(35,Math.max(12,direct*.1))))continue;
-   selected.push(candidate);
-   if(selected.length===MAX_GEO_HUBS)break;
- }
- return selected.map(x=>x.city).sort((a,b)=>distance(from,a)-distance(from,b));
-}
 function waitMinutes(arrival,departure){const a=minutes(arrival),b=minutes(departure);if(a<0||b<0)return-1;return b>=a?b-a:b+1440-a}
 function makeRoute(legs){return{legs,totalPrice:legs.reduce((s,x)=>s+price(x.ride.price),0)}}
 const BUSCA_ONIBUS_SLUG_OVERRIDES=Object.freeze({formosa:"formosa-go"});
