@@ -140,3 +140,6 @@ header>.site-share .share-feedback{max-width:100%}
 .city-combobox>.clear-city{position:absolute;right:8px;top:50%;transform:translateY(-50%);z-index:2;display:grid;place-items:center;width:34px;height:34px;padding:0!important;border:0!important;border-radius:9px;background:var(--linkbg)!important;color:var(--muted)!important;font-size:1.4rem!important;line-height:1;cursor:pointer}
 .city-combobox>.clear-city:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .city-combobox>.clear-city[hidden]{display:none!important}
+
+/* Keep the empty-field city list visible and discoverable without changing ranking. */
+.city-combobox>.city-input{padding-right:84px}.city-combobox>.show-cities{position:absolute;right:8px;top:50%;transform:translateY(-50%);z-index:2;display:grid;place-items:center;width:34px;height:34px;padding:0!important;border:0!important;border-radius:9px;background:transparent!important;color:var(--muted)!important;font-size:1.15rem!important;line-height:1;cursor:pointer}.city-combobox>.show-cities:focus-visible{outline:2px solid var(--accent);outline-offset:1px}.city-combobox>.clear-city{right:44px}

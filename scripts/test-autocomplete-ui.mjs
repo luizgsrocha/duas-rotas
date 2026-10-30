@@ -19,12 +19,15 @@ try{
   await page.goto(`http://127.0.0.1:${server.address().port}/`);
   await page.waitForFunction(()=>document.querySelector('#origin').dataset.cityBound==='1');
   const input=page.locator('#origin'),options=page.locator('#origin-options .city-option');
+  await input.focus();assert.equal(await options.count(),40);assert.equal(await input.getAttribute('aria-expanded'),'true');
+  await input.press('Escape');await page.locator('[data-show-cities="origin"]').click();assert.equal(await options.count(),40);assert.equal(await input.getAttribute('aria-expanded'),'true');
   await input.fill('taubatte');assert.equal(await options.first().textContent(),'Taubaté, SP');
   await input.press('ArrowUp');assert.equal(await input.getAttribute('aria-activedescendant'),await options.last().getAttribute('id'));
   await input.fill('sao paulo');assert.equal(await input.getAttribute('aria-activedescendant'),null);
   await input.press('ArrowDown');assert.equal(await options.first().getAttribute('aria-selected'),'true');
   await input.press('Enter');assert.equal(await input.inputValue(),'São Paulo, SP');assert.equal(await input.getAttribute('data-slug'),'sao-paulo');
   assert.equal(await input.getAttribute('aria-expanded'),'false');
+  await page.locator('[data-clear-city="origin"]').click();assert.equal(await input.inputValue(),'');assert.equal(await options.count(),40);assert.equal(await input.getAttribute('aria-expanded'),'true');
   await input.fill('taubatte');assert.equal(await input.getAttribute('data-slug'),'');
   if(size.mobile)await options.first().tap();else await options.first().click();
   assert.equal(await input.inputValue(),'Taubaté, SP');assert.equal(await input.getAttribute('aria-expanded'),'false');
