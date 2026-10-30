@@ -134,3 +134,9 @@ header>.site-share .share-feedback{max-width:100%}
  .featured-routes-disclosure>summary{min-height:56px;padding:11px 14px;font-size:.98rem}
  .featured-routes-disclosure .featured-routes-content{padding:0 14px 15px}
 }
+
+/* Accessible clear action within city inputs */
+.city-combobox>.city-input{padding-right:48px}
+.city-combobox>.clear-city{position:absolute;right:8px;top:50%;transform:translateY(-50%);z-index:2;display:grid;place-items:center;width:34px;height:34px;padding:0!important;border:0!important;border-radius:9px;background:var(--linkbg)!important;color:var(--muted)!important;font-size:1.4rem!important;line-height:1;cursor:pointer}
+.city-combobox>.clear-city:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.city-combobox>.clear-city[hidden]{display:none!important}
