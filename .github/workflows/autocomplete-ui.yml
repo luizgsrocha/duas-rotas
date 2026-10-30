@@ -18,3 +18,4 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: node scripts/test-autocomplete-ui.mjs
       - run: node scripts/test-seo-ui.mjs
+      - run: node scripts/test-search-cancellation-ui.mjs
