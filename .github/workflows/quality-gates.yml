@@ -1,0 +1,64 @@
+name: quality-gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-and-static:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --check app.js && node --check worker.js && node --check rn-hub.js && node --check functions/api/rides.js
+      - run: node --test tests/*.test.mjs tests/*.test.cjs
+      - run: node scripts/benchmark-rn-hub.mjs
+      - name: Validate Cloudflare bundle without deployment
+        run: npx --yes wrangler@4.156.0 deploy --dry-run --outdir /tmp/rua-nossa-dry-run
+
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --no-save --ignore-scripts playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/test-autocomplete-ui.mjs
+
+  security:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node scripts/ci/security-check.mjs
+      - name: Reject sensitive autonomous changes without human review
+        if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'autonomy:candidate')
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if git diff --name-only "$BASE_SHA" "$HEAD_SHA" | grep -Eq '^(\.github/|wrangler\.toml$|AGENTS\.md$|docs/autonomy/)'; then
+            echo 'Mudança autônoma em caminho sensível exige revisão humana.' >&2
+            exit 1
+          fi

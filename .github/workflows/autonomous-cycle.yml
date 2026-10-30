@@ -1,0 +1,32 @@
+name: autonomous-cycle
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: autonomous-development
+  cancel-in-progress: false
+
+jobs:
+  cycle:
+    if: vars.AUTONOMY_ENABLED == 'true'
+    runs-on: [self-hosted, autonomous-dev]
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Fail closed until the operator installs the pinned executor
+        run: |
+          test -x "${AUTONOMY_RUNNER_COMMAND:-}" || {
+            echo 'AUTONOMY_RUNNER_COMMAND não configurado; ciclo encerrado sem alteração.'
+            exit 1
+          }
+          exec -- "$AUTONOMY_RUNNER_COMMAND"
+        env:
+          AUTONOMY_RUNNER_COMMAND: ${{ vars.AUTONOMY_RUNNER_COMMAND }}
