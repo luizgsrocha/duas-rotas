@@ -15,6 +15,7 @@ versionamento semântico. Datas usam UTC.
 
 ### Changed
 
+- Lista de cidades restaurada nos campos vazios, com ranking e fuzzy preservados.
 - Rotas em destaque agora preenchem a busca diretamente, sem página intermediária.
 - Redesenho responsivo e compacto das rotas em destaque na página inicial.
 

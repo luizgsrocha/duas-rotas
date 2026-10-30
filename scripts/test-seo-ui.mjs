@@ -40,6 +40,12 @@ try {
     page.on("pageerror", (e) => errors.push(e.message));
     await page.goto(`http://127.0.0.1:${server.address().port}/`);
     assert.equal(await page.locator(".featured-route").count(), 3);
+    await page.locator(".featured-routes-disclosure summary").click();
+    assert.ok(
+      await page.locator(".featured-routes-disclosure").evaluate(
+        (element) => element.open,
+      ),
+    );
     assert.equal(
       await page
         .locator(".featured-routes")
