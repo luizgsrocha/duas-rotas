@@ -42,7 +42,7 @@ function syncClearCity(input){const button=input.closest(".city-combobox")?.quer
 $$(".city-input").forEach(input=>{const button=input.closest(".city-combobox")?.querySelector(".clear-city");button?.addEventListener("click",()=>{input.value="";delete input.dataset.slug;input.dispatchEvent(new Event("input",{bubbles:true}));syncClearCity(input);input.focus()});input.addEventListener("input",()=>syncClearCity(input));input.addEventListener("change",()=>syncClearCity(input));syncClearCity(input)});
 $$(".show-cities").forEach(button=>button.addEventListener("click",()=>{const input=button.closest(".city-combobox")?.querySelector(".city-input");if(!input)return;input.focus();input._refreshCities?.()}));
 window.addEventListener("pageshow",()=>{const p=new URLSearchParams(location.search);if(!p.has("origin")&&!p.has("destination")){$$(".city-input").forEach(input=>{input.value="";delete input.dataset.slug;syncClearCity(input)})}});
-$("#date").value=spDate(new Date());$("#openCalendar").addEventListener("click",()=>{const input=$("#date");try{if(typeof input.showPicker==="function"){input.showPicker();return}}catch{}input.focus();input.click()});$("#search").onclick=check;$("#sort").onchange=renderLastResults;$("#swap").onclick=swapRoute;$("#locate").onclick=useLocation;let cities=[],cityByName=new Map(),lastResults=null,lastDate="";loadCities();async function loadCities(){try{const r=await fetch("/api/cities"),data=await r.json();if(!r.ok||!Array.isArray(data))return;cities=data;cityByName=new Map(cities.map(c=>[cityNormalize(c.name),c]));applyRoutePrefill(new URLSearchParams(location.search),cities);$$(".city-input").forEach(input=>{bindCity(input);input._refreshCities?.()})}catch{}}// Search-only normalization: route/provider normalization remains unchanged.
+$("#date").value=spDate(new Date());$("#openCalendar").addEventListener("click",()=>{const input=$("#date");try{if(typeof input.showPicker==="function"){input.showPicker();return}}catch{}input.focus();input.click()});$("#search").onclick=check;$("#cancelSearch").onclick=cancelActiveSearch;$("#sort").onchange=renderLastResults;$("#swap").onclick=swapRoute;$("#locate").onclick=useLocation;let cities=[],cityByName=new Map(),lastResults=null,lastDate="",activeSearch=null,searchSequence=0;loadCities();async function loadCities(){try{const r=await fetch("/api/cities"),data=await r.json();if(!r.ok||!Array.isArray(data))return;cities=data;cityByName=new Map(cities.map(c=>[cityNormalize(c.name),c]));applyRoutePrefill(new URLSearchParams(location.search),cities);$$(".city-input").forEach(input=>{bindCity(input);input._refreshCities?.()})}catch{}}// Search-only normalization: route/provider normalization remains unchanged.
 function cityNormalize(value){
   return String(value??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"")
     .toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
@@ -149,14 +149,17 @@ function selectedCity(input){const c=cityByName.get(cityNormalize(input.value));
 function spDate(d){return d.toLocaleDateString("en-CA",{timeZone:"America/Sao_Paulo"})}
 async function runSearchModes(fetchMode,maxTransfers,onUpdate=()=>{}){
  let direct=null,directError=null,transfers=null,transferError=null;
- try{direct=await fetchMode("direct")}catch(error){directError=error}
+ try{direct=await fetchMode("direct")}catch(error){if(error.name==="SearchCancelledError")throw error;directError=error}
  onUpdate({phase:"direct",direct,directError});
  if(maxTransfers>0){
   onUpdate({phase:"transfers",direct,directError});
-  try{transfers=await fetchMode("transfers")}catch(error){transferError=error}
+  try{transfers=await fetchMode("transfers")}catch(error){if(error.name==="SearchCancelledError")throw error;transferError=error}
  }
  return{direct,directError,transfers,transferError};
 }
+function searchCancelled(){const error=new Error("Busca cancelada.");error.name="SearchCancelledError";return error}
+function setSearchRunning(running){$("#cancelSearch").hidden=!running;$("#search").textContent=running?"Buscar novamente":"Verificar carona";$("#search").setAttribute("aria-label",running?"Iniciar nova busca e cancelar a atual":"Verificar carona")}
+function cancelActiveSearch(){if(!activeSearch)return;activeSearch.controller.abort();activeSearch=null;searchSequence++;setSearchRunning(false);$("#transferLoading").hidden=true;$("#status").textContent="Busca cancelada."}
 async function check(){
  window.scrollTo({top:document.documentElement.scrollHeight,behavior:"smooth"});
  const date=$("#date").value,maxWait=Number($("#maxWait").value),maxTransfers=Number($("#maxTransfers").value),originCity=selectedCity($("#origin")),destinationCity=selectedCity($(".destination"));
@@ -164,17 +167,19 @@ async function check(){
  if(!Number.isInteger(maxTransfers)||maxTransfers<0||maxTransfers>10){$("#status").textContent="Defina no máximo de 0 a 10 baldeações.";$("#results").innerHTML="";return}
  if(!originCity||!destinationCity){$("#status").textContent="Selecione uma cidade válida na lista.";$("#results").innerHTML="";return}
  if(originCity.slug===destinationCity.slug){$("#status").textContent="A origem não pode ser igual ao destino.";$("#results").innerHTML="";return}
+ if(activeSearch)activeSearch.controller.abort();
+ const searchId=++searchSequence,controller=new AbortController();activeSearch={id:searchId,controller};setSearchRunning(true);
  const originName=originCity.name,destinationName=destinationCity.name;
  const base="/api/exists?date="+encodeURIComponent(date)+"&origin="+encodeURIComponent(originCity.slug)+"&destination="+encodeURIComponent(destinationCity.slug)+"&originName="+encodeURIComponent(originName)+"&destinationName="+encodeURIComponent(destinationName)+"&minWait=0&maxWait="+encodeURIComponent(maxWait)+"&maxTransfers="+encodeURIComponent(maxTransfers);
  const fetchMode=async mode=>{
-  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),mode==="direct"?35000:305000);
-  try{const r=await fetch(base+"&mode="+mode,{cache:"no-store",signal:controller.signal}),d=await r.json();if(!r.ok)throw new Error(d.error||"Falha na consulta");return d}
-  catch(error){if(controller.signal.aborted)throw new Error("A consulta demorou demais. Tente novamente.");throw error}
-  finally{clearTimeout(timer)}
+  let timedOut=false;const requestController=new AbortController(),cancelRequest=()=>requestController.abort(),timer=setTimeout(()=>{timedOut=true;requestController.abort()},mode==="direct"?35000:305000);controller.signal.addEventListener("abort",cancelRequest,{once:true});
+  try{const r=await fetch(base+"&mode="+mode,{cache:"no-store",signal:requestController.signal}),d=await r.json();if(!r.ok)throw new Error(d.error||"Falha na consulta");return d}
+  catch(error){if(requestController.signal.aborted){if(timedOut)throw new Error("A consulta demorou demais. Tente novamente.");throw searchCancelled()}throw error}
+  finally{clearTimeout(timer);controller.signal.removeEventListener("abort",cancelRequest)}
  };
- $("#search").disabled=true;lastDate=date;lastResults={originName,destinationName,routes:[],count:0};$("#transferLoading").hidden=true;$("#status").textContent="Procurando caronas diretas…";$("#results").innerHTML="";
+ lastDate=date;lastResults={originName,destinationName,routes:[],count:0};$("#transferLoading").hidden=true;$("#status").textContent="Procurando caronas diretas…";$("#results").innerHTML="";
  try{
-  const search=await runSearchModes(fetchMode,maxTransfers,state=>{
+  const search=await runSearchModes(fetchMode,maxTransfers,state=>{if(searchId!==searchSequence)return;
    if(state.phase==="direct"){
     if(state.direct){lastResults=state.direct;renderLastResults();$("#status").textContent=state.direct.incomplete?(state.direct.warning||"Não foi possível concluir a busca direta."):state.direct.count?state.direct.count+" carona(s) direta(s) encontrada(s).":"Nenhuma carona direta encontrada."}
     else{$("#status").textContent=maxTransfers>0?"A consulta direta falhou. Continuando a busca por baldeações…":"Não foi possível consultar caronas diretas.";lastResults={originName,destinationName,routes:[],count:0,incomplete:true};renderLastResults()}
@@ -200,8 +205,8 @@ async function check(){
    return;
   }
   $("#status").textContent=routes.length?routes.length+" combinação(ões) encontrada(s) — "+directTotal+" direta(s) e "+transferTotal+" com baldeação.":"Nenhuma rota encontrada nessa data.";
- }catch(error){$("#transferLoading").hidden=true;$("#status").textContent="Não foi possível verificar agora: "+error.message}
- finally{$("#transferLoading").hidden=true;$("#search").disabled=false}
+ }catch(error){if(searchId!==searchSequence)return;$("#transferLoading").hidden=true;$("#status").textContent=error.name==="SearchCancelledError"?"Busca cancelada.":"Não foi possível verificar agora: "+error.message}
+ finally{if(searchId===searchSequence){activeSearch=null;setSearchRunning(false);$("#transferLoading").hidden=true}}
 }
 
 function renderLastResults(){if(!lastResults)return;const mode=$("#sort").value;$("#results").innerHTML=[lastResults].map(d=>{const routes=sortRoutes(d.routes||[],mode);return '<section class="destination-result"><h2>'+esc(d.destinationName)+'</h2><small>'+esc(d.originName)+' → '+esc(d.destinationName)+' · '+formatDate(lastDate)+'</small>'+(routes.length?groupCards(routes):(d.incomplete?'<article class="route"><h3>Busca incompleta</h3><p>Não foi possível concluir a consulta à fonte de caronas. A disponibilidade não foi confirmada. Tente novamente.</p></article>':'<article class="route"><h3>Nenhuma rota encontrada</h3></article>'))+'</section>'}).join("")}

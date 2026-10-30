@@ -29,11 +29,11 @@ test('each transfer pair is fetched only once, including failures',async()=>{
 const source=readFileSync(new URL('../app.js',import.meta.url),'utf8');
 for(const scenario of ['failed','incomplete','empty'])test(`UI differentiates ${scenario} search from confirmed absence`,async()=>{
  const elements=new Map();
- const element=selector=>{if(!elements.has(selector))elements.set(selector,{value:'',textContent:'',innerHTML:'',hidden:true});return elements.get(selector)};
+ const element=selector=>{if(!elements.has(selector))elements.set(selector,{value:'',textContent:'',innerHTML:'',hidden:true,setAttribute(){}});return elements.get(selector)};
  element('#date').value='2026-11-05';element('#maxWait').value='90';element('#maxTransfers').value='0';
  const sandbox={window:{scrollTo(){}},document:{documentElement:{scrollHeight:0}},$ :element,selectedCity:el=>el===element('#origin')?{name:'Formosa',slug:'formosa'}:{name:'Brasília',slug:'brasilia'},setTimeout,clearTimeout,AbortController,renderLastResults(){},fetch:async()=>({ok:scenario!=='failed',json:async()=>scenario==='failed'?{error:'A fonte recusou a consulta.'}:{count:0,routes:[],incomplete:scenario==='incomplete',warning:'Consulta incompleta.'}})};
  const start=source.indexOf('async function runSearchModes('),end=source.indexOf('\nfunction renderLastResults()',start);
- vm.runInNewContext('let lastResults,lastDate;'+source.slice(start,end)+'\nglobalThis.check=check;',sandbox);
+ vm.runInNewContext('let lastResults,lastDate,activeSearch=null,searchSequence=0;'+source.slice(start,end)+'\nglobalThis.check=check;',sandbox);
  await sandbox.check();
  const message=element('#status').textContent;
  if(scenario==='empty')assert.match(message,/Nenhuma rota/);
