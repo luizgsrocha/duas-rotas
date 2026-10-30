@@ -113,3 +113,24 @@ header>.site-share .share-feedback{max-width:100%}
 /* Compact, touch-friendly route discovery */
 .seo-info{margin-top:28px;padding:22px;border:1px solid var(--border);border-radius:18px;background:linear-gradient(145deg,var(--card),var(--linkbg));box-shadow:0 8px 24px #0000000d}.seo-heading{margin-bottom:16px}.seo-kicker{display:block;margin-bottom:4px;color:var(--accent);font-size:.75rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.seo-heading h2{margin:0;font-size:clamp(1.35rem,4vw,1.75rem);letter-spacing:-.025em}.seo-heading p{margin:6px 0 0;color:var(--muted);font-size:.92rem;line-height:1.45}.featured-routes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.featured-route{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px;min-height:76px;padding:13px 14px;border:1px solid var(--border);border-radius:14px;background:var(--card);color:var(--text);text-decoration:none;box-shadow:0 2px 8px #0000000a;transition:border-color .15s,transform .15s,box-shadow .15s}.featured-route:hover{border-color:var(--accent);box-shadow:0 5px 14px #00000012;transform:translateY(-1px)}.featured-route:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 35%,transparent);outline-offset:2px}.route-cities{display:flex;min-width:0;flex-direction:column;gap:3px}.route-cities strong{overflow:hidden;text-overflow:ellipsis;font-size:.9rem;white-space:nowrap}.route-cities small{color:var(--muted);font-size:.72rem;font-weight:750}.route-destination{text-align:right;align-items:flex-end}.route-arrow{display:grid;width:30px;height:30px;place-items:center;border-radius:50%;background:var(--linkbg);color:var(--accent);font-size:1rem;font-weight:800}.seo-note{display:flex;align-items:center;gap:7px;margin:14px 2px 0;color:var(--muted);font-size:.78rem;line-height:1.4}.seo-note span{color:var(--accent)}
 @media(max-width:700px){.seo-info{margin-top:22px;padding:18px 16px}.featured-routes{grid-template-columns:1fr}.featured-route{min-height:64px;padding:11px 13px}.route-cities strong{font-size:.94rem}.seo-note{margin-top:12px}}
+
+/* Featured routes: compact, accessible accordion above search */
+.featured-routes-disclosure{margin:18px 0 16px;padding:0;border-radius:16px;overflow:hidden;box-shadow:none}
+.featured-routes-disclosure>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:58px;padding:13px 18px;list-style:none;cursor:pointer;font-weight:700;font-size:1rem;color:var(--text);user-select:none}
+.featured-routes-disclosure>summary::-webkit-details-marker{display:none}
+.featured-routes-disclosure>summary::marker{content:""}
+.featured-routes-disclosure>summary:focus-visible{outline:3px solid var(--accent);outline-offset:-3px}
+.featured-summary-label{display:inline-flex;align-items:center;gap:11px}
+.featured-summary-icon{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:9px;background:var(--linkbg);color:var(--accent);font-size:1.1rem}
+.featured-summary-chevron{color:var(--accent);font-size:1.35rem;line-height:1;transition:transform .2s ease}
+.featured-routes-disclosure[open] .featured-summary-chevron{transform:rotate(180deg)}
+.featured-routes-disclosure .featured-routes-content{padding:0 18px 18px}
+.featured-routes-disclosure .seo-heading{margin-top:2px}
+.featured-routes-disclosure+ .search{margin-top:0}
+@media(max-width:650px){
+ main>h1{font-size:clamp(1.85rem,7vw,2.3rem);line-height:1.16;letter-spacing:-.025em;margin-bottom:12px}
+ main>.intro{font-size:1rem;line-height:1.5;margin-bottom:18px}
+ .featured-routes-disclosure{margin:16px 0 16px;border-radius:15px}
+ .featured-routes-disclosure>summary{min-height:56px;padding:11px 14px;font-size:.98rem}
+ .featured-routes-disclosure .featured-routes-content{padding:0 14px 15px}
+}
