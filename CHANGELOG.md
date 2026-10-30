@@ -15,6 +15,7 @@ versionamento semântico. Datas usam UTC.
 
 ### Changed
 
+- Rotas em destaque movidas para uma aba expansível antes do formulário.
 - Rotas em destaque agora preenchem a busca diretamente, sem página intermediária.
 - Redesenho responsivo e compacto das rotas em destaque na página inicial.
 

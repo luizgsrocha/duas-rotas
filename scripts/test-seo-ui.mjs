@@ -39,6 +39,18 @@ try {
       errors = [];
     page.on("pageerror", (e) => errors.push(e.message));
     await page.goto(`http://127.0.0.1:${server.address().port}/`);
+    const shortcuts = page.locator(".featured-routes-panel");
+    assert.equal(await shortcuts.getAttribute("open"), null);
+    assert.ok(
+      await page.evaluate(
+        () =>
+          document.querySelector(".featured-routes-panel").compareDocumentPosition(
+            document.querySelector(".search"),
+          ) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ),
+    );
+    await shortcuts.locator("summary").click();
+    assert.notEqual(await shortcuts.getAttribute("open"), null);
     assert.equal(await page.locator(".featured-route").count(), 3);
     assert.equal(
       await page
@@ -98,7 +110,7 @@ try {
     await page.close();
   }
   console.log(
-    "SEO UI: direct featured-route prefill, route CTA, no automatic search and version history passed.",
+    "SEO UI: expandable shortcuts before search, direct prefill, route CTA and version history passed.",
   );
 } finally {
   await browser?.close();
