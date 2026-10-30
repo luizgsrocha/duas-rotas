@@ -41,9 +41,12 @@ try {
     await page.goto(`http://127.0.0.1:${server.address().port}/`);
     assert.equal(await page.locator(".featured-route").count(), 3);
     assert.equal(
-      await page.locator(".featured-routes").evaluate((element) =>
-        getComputedStyle(element).gridTemplateColumns.split(" ").length,
-      ),
+      await page
+        .locator(".featured-routes")
+        .evaluate(
+          (element) =>
+            getComputedStyle(element).gridTemplateColumns.split(" ").length,
+        ),
       width === 360 ? 1 : 3,
     );
     assert.ok(
@@ -51,6 +54,15 @@ try {
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     );
+    await page.locator(".featured-route").first().click();
+    await page.waitForFunction(
+      () => document.querySelector("#origin").dataset.slug === "taubate",
+    );
+    assert.equal(
+      await page.locator("#destination").getAttribute("data-slug"),
+      "campinas",
+    );
+    assert.equal(await page.locator("#results").textContent(), "");
     await page.goto(
       `http://127.0.0.1:${server.address().port}/caronas/formosa-para-brasilia.html`,
     );
@@ -86,7 +98,7 @@ try {
     await page.close();
   }
   console.log(
-    "SEO UI: responsive featured routes, route CTA, prefill, no automatic search and version history passed.",
+    "SEO UI: direct featured-route prefill, route CTA, no automatic search and version history passed.",
   );
 } finally {
   await browser?.close();
