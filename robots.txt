@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://rua-nossa.lgsr96.workers.dev/sitemap.xml

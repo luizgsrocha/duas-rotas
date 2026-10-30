@@ -107,3 +107,5 @@ header>.site-share .share-feedback{max-width:100%}
 }
 
 .city-combobox .city-input{font-size:16px}.city-options{max-height:min(240px,40dvh);touch-action:pan-y}
+
+.seo-info{margin-top:2rem}.seo-info ul{padding-left:1.5rem}.seo-info li{margin:.6rem 0}.seo-cta{display:inline-block;padding:1rem;border:1px solid currentColor;border-radius:.7rem}body>main>section{overflow-wrap:anywhere}header img{max-width:100%;height:auto}

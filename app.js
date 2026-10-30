@@ -21,7 +21,7 @@ const shareUrl="https://rua-nossa.lgsr96.workers.dev/";
 $("#share-site").addEventListener("click",async()=>{
   const feedback=$("#share-feedback");
   feedback.textContent="";
-  const data={title:"Rua Nossa",text:"Conheça o Rua Nossa! Encontre caronas pelo Brasil.",url:shareUrl};
+  const data={title:"Duas Rotas",text:"Conheça o Duas Rotas! Encontre caronas particulares e conexões.",url:shareUrl};
   if(typeof navigator.share==="function"){
     try{await navigator.share(data);return}
     catch(error){
@@ -38,7 +38,7 @@ $("#share-site").addEventListener("click",async()=>{
 });
 
 media.addEventListener?.("change",()=>{if(theme==="auto")applyTheme("auto")});
-$("#date").value=spDate(new Date());$("#openCalendar").addEventListener("click",()=>{const input=$("#date");try{if(typeof input.showPicker==="function"){input.showPicker();return}}catch{}input.focus();input.click()});$("#search").onclick=check;$("#sort").onchange=renderLastResults;$("#swap").onclick=swapRoute;$("#locate").onclick=useLocation;let cities=[],cityByName=new Map(),lastResults=null,lastDate="";loadCities();async function loadCities(){try{const r=await fetch("/api/cities"),data=await r.json();if(!r.ok||!Array.isArray(data))return;cities=data;cityByName=new Map(cities.map(c=>[cityNormalize(c.name),c]));$$(".city-input").forEach(input=>{bindCity(input);input._refreshCities?.()})}catch{}}// Search-only normalization: route/provider normalization remains unchanged.
+$("#date").value=spDate(new Date());$("#openCalendar").addEventListener("click",()=>{const input=$("#date");try{if(typeof input.showPicker==="function"){input.showPicker();return}}catch{}input.focus();input.click()});$("#search").onclick=check;$("#sort").onchange=renderLastResults;$("#swap").onclick=swapRoute;$("#locate").onclick=useLocation;let cities=[],cityByName=new Map(),lastResults=null,lastDate="";loadCities();async function loadCities(){try{const r=await fetch("/api/cities"),data=await r.json();if(!r.ok||!Array.isArray(data))return;cities=data;cityByName=new Map(cities.map(c=>[cityNormalize(c.name),c]));applyRoutePrefill(new URLSearchParams(location.search),cities);$$(".city-input").forEach(input=>{bindCity(input);input._refreshCities?.()})}catch{}}// Search-only normalization: route/provider normalization remains unchanged.
 function cityNormalize(value){
   return String(value??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"")
     .toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
@@ -209,3 +209,5 @@ function routeMap(route){const names=route.legs.map(x=>x.fromName).concat(route.
 function buildTree(routes){const root=[];for(const route of routes){let nodes=root;for(const leg of route.legs){const key=leg.from+"|"+leg.to+"|"+leg.ride.url;let node=nodes.find(x=>x.key===key);if(!node){node={key,leg,children:[]};nodes.push(node)}nodes=node.children}}return root}
 function renderNodes(nodes,depth){return nodes.map(node=>{const x=node.leg,has=node.children.length>0,dep=x.ride.departure||"—",arr=x.ride.arrival||"—";let html='<div class="tree-node depth-'+depth+'"><div class="timeline-stop"><span class="timeline-time">'+esc(dep)+'</span><span class="timeline-dot"></span><strong>'+esc(x.fromName)+'</strong></div><div class="timeline-ride"><div class="ride-card"><div><strong>🚗 '+esc(x.fromName)+' → '+esc(x.toName)+'</strong><span>'+esc(dep)+' → '+esc(arr)+(x.ride.price?" · R$ "+esc(x.ride.price):"")+'</span></div><a href="'+esc(x.ride.url)+'" target="_blank" rel="noopener">Ver na BlaBlaCar ↗</a></div></div><div class="timeline-stop arrival"><span class="timeline-time">'+esc(arr)+'</span><span class="timeline-dot"></span><strong>'+esc(x.toName)+'</strong></div>';if(has){html+='<div class="connections"><small>Conexões disponíveis</small>'+node.children.map(child=>{const wait=mins(child.leg.ride.departure)-mins(x.ride.arrival);return '<div class="connection-wait">⏱ Espera de '+waitText(wait)+'</div>'+renderNodes([child],depth+1)}).join("")+'</div>'}return html+"</div>"}).join("")}
 function mins(v){const m=String(v||"").match(/(\d{1,2}):(\d{2})/);return m?Number(m[1])*60+Number(m[2]):-1}function waitText(n){const h=Math.floor(n/60),m=n%60;return(h?h+"h ":"")+m+"min"}function formatDate(s){const a=s.split("-");return a[2]+"/"+a[1]+"/"+a[0]}function esc(s){return String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+
+function applyRoutePrefill(params,catalog){for(const [key,selector] of [["origin","#origin"],["destination",".destination"]]){const city=catalog.find(c=>c.slug===params.get(key));if(city)setCity($(selector),city)}}
