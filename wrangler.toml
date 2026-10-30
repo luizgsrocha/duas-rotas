@@ -2,6 +2,9 @@ name = "rua-nossa"
 main = "worker.js"
 compatibility_date = "2026-10-04"
 
+[vars]
+RN_HUB_ENABLED = "1"
+
 [previews.vars]
 RN_HUB_ENABLED = "1"
 
