@@ -4,6 +4,12 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const root='https://rua-nossa.lgsr96.workers.dev';
+test('Cloudflare assets include every public SEO document',()=>{
+ const rules=new Set(read('.assetsignore').split(/\r?\n/).filter(Boolean));
+ for(const rule of ['!robots.txt','!sitemap.xml','!versoes.html','!caronas/','!caronas/*.html']){
+  assert.ok(rules.has(rule),`.assetsignore must contain ${rule}`);
+ }
+});
 test('sitemap URLs resolve to static HTML with matching canonicals and unique titles',()=>{
  const urls=[...read('sitemap.xml').matchAll(/<loc>(.*?)<\/loc>/g)].map(m=>m[1]);
  assert.equal(urls.length,5);const titles=new Set();

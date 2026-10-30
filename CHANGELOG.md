@@ -7,6 +7,7 @@ versionamento semântico. Datas usam UTC.
 
 ### Added
 
+- Metadados SEO, sitemap, robots, guias de rotas e histórico público v0.10.0.
 - Contrato permanente de agentes, fila priorizada e runbooks de ativação.
 - Quality gates para testes, browser, segurança e validação Cloudflare sem deploy.
 - Arquitetura inerte de execução recorrente, merge controlado e monitoramento do
