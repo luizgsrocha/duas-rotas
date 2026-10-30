@@ -19,3 +19,4 @@ jobs:
       - run: node scripts/test-autocomplete-ui.mjs
       - run: node scripts/test-seo-ui.mjs
       - run: node scripts/test-search-cancellation-ui.mjs
+      - run: node scripts/test-location-ui.mjs
