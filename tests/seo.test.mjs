@@ -13,7 +13,7 @@ test('Cloudflare assets include every public SEO document',()=>{
 test('sitemap URLs resolve to static HTML with matching canonicals and unique titles',()=>{
  const urls=[...read('sitemap.xml').matchAll(/<loc>(.*?)<\/loc>/g)].map(m=>m[1]);
  assert.equal(urls.length,5);const titles=new Set();
- for(const url of urls){assert.ok(url.startsWith(root+'/'));const path=new URL(url).pathname;const body=read(path==='/'?'index.html':path.slice(1));assert.ok(body.includes('rel="canonical" href="'+url+'"'));titles.add(body.match(/<title>(.*?)<\/title>/)[1]);assert.match(body,/v0\.10\.4/);assert.match(body,/href="\/versoes.html"/)}
+ for(const url of urls){assert.ok(url.startsWith(root+'/'));const path=new URL(url).pathname;const body=read(path==='/'?'index.html':path.slice(1));assert.ok(body.includes('rel="canonical" href="'+url+'"'));titles.add(body.match(/<title>(.*?)<\/title>/)[1]);assert.match(body,/v0\.10\.7/);assert.match(body,/href="\/versoes.html"/)}
  assert.equal(titles.size,urls.length);
 });
 test('route CTAs use real catalog slugs and never start a search automatically',()=>{

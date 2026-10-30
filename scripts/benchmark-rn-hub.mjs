@@ -6,7 +6,7 @@ import {loadWorker,source,query,ride} from '../tests/helpers/worker.mjs';
 
 const cities=JSON.parse(fs.readFileSync(new URL('../cities.json',import.meta.url)));
 const indexText=fs.readFileSync(new URL('../rn-hub-index.json',import.meta.url),'utf8');
-const index=JSON.parse(indexText),api=loadWorker();
+const index=JSON.parse(indexText);
 const city=(slug,uf)=>cities.find(item=>item.slug===slug&&item.uf===uf);
 const cases=[
  ['taubate','SP','uberlandia','MG','ribeirao-preto'],
@@ -30,7 +30,7 @@ function measure(selector,rounds=100){
 function hits(selector){return cases.reduce((total,[from,fromUf,to,toUf,expected])=>
  total+Number(selector(cities,city(from,fromUf),city(to,toUf)).some(item=>item.slug===expected)),0)}
 
-const legacySelector=(all,from,to)=>api.selectHubs(all,from,to);
+const api=loadWorker();
 const rnSelector=(all,from,to)=>api.selectRnHubCandidates(all,from,to,index);
 const journey=await query(loadWorker(source({
  'taubate|ribeirao-preto':[ride('06:00','08:00')],
@@ -41,11 +41,11 @@ const journey=await query(loadWorker(source({
 const report={
  dataset:{municipalities:cities.length,indexBytes:Buffer.byteLength(indexText),
    v8SerializedBytes:serialize(index).byteLength,coverage:index.coverage},
- selector:{legacy:measure(legacySelector),rnHub:measure(rnSelector)},
- referenceHubRecall:{legacy:hits(legacySelector),rnHub:hits(rnSelector),total:cases.length},
+ selector:{rnHub:measure(rnSelector)},
+ referenceHubRecall:{rnHub:hits(rnSelector),total:cases.length},
  verifiedSearch:{routes:journey.body.count,queries:journey.body.diagnostics.completed,
    queryLimit:journey.body.diagnostics.queryLimit,backwardProbes:journey.body.diagnostics.backwardProbes},
 };
-if(report.referenceHubRecall.rnHub<=report.referenceHubRecall.legacy)throw new Error('RN-HUB did not improve reference-hub recall');
+if(report.referenceHubRecall.rnHub!==report.referenceHubRecall.total)throw new Error('RN-HUB reference-hub recall regression');
 if(!report.verifiedSearch.routes||report.verifiedSearch.queries>report.verifiedSearch.queryLimit)throw new Error('Search budget/verification regression');
 console.log(JSON.stringify(report,null,2));

@@ -10,7 +10,7 @@ export function loadWorker({fetch,clock=()=>Date.now(),timers={setTimeout,clearT
     fetch:fetch??(()=>{throw new Error('Unexpected network request in deterministic tests')})};
   vm.createContext(sandbox);
   vm.runInContext(hubSource+'\n'+source.replace('export default','const worker =')+
-    '\nglobalThis.testApi={worker,findRoutes,selectBrgHubs,selectHubs,selectRnHubCandidates,rankRnHubCandidates,fetchRidePage};',sandbox);
+    '\nglobalThis.testApi={worker,findRoutes,selectRnHubCandidates,rankRnHubCandidates,fetchRidePage};',sandbox);
   sandbox.testApi.segmentCache=cache;
   return sandbox.testApi;
 }
@@ -41,11 +41,12 @@ export function source(offers,{fail=[]}={}) {
   };
   return {fetch,calls};
 }
-export async function query(api,{geo=cities,hubIndex=null,rnHubEnabled=false,origin='taubate',destination='pirassununga',
+export async function query(api,{geo=cities,hubIndex=undefined,rnHubEnabled=true,origin='taubate',destination='pirassununga',
   mode='transfers',maxTransfers=2,minWait=0,maxWait=90,...extra}={}) {
   const params=new URLSearchParams({date:extra.date||'2026-10-14',origin,destination,mode,
     maxTransfers:String(maxTransfers),minWait:String(minWait),maxWait:String(maxWait),...extra});
-  const env={RN_HUB_ENABLED:rnHubEnabled?'1':'0',RIDES_CACHE:api.segmentCache,ASSETS:{fetch:async input=>Response.json(new URL(input).pathname==='/rn-hub-index.json'?hubIndex:geo,{status:hubIndex||new URL(input).pathname!=='/rn-hub-index.json'?200:404})}};
+  const effectiveIndex=hubIndex===undefined?{version:'rn-hub-2026.10.1',records:Object.fromEntries(geo.map(item=>[`${item.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')}:${item.uf||''}`,[500,50_000,'3B',5]]))}:hubIndex;
+  const env={RN_HUB_ENABLED:rnHubEnabled?'1':'0',RIDES_CACHE:api.segmentCache,ASSETS:{fetch:async input=>Response.json(new URL(input).pathname==='/rn-hub-index.json'?effectiveIndex:geo,{status:effectiveIndex||new URL(input).pathname!=='/rn-hub-index.json'?200:404})}};
   const response=await api.worker.fetch(new Request('https://duas-rotas.example/api/exists?'+params),env);
   return {status:response.status,body:await response.json()};
 }

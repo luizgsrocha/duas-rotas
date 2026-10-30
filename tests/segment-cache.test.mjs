@@ -7,7 +7,7 @@ const cities=JSON.parse(fs.readFileSync(new URL('../cities.json',import.meta.url
 const index=JSON.parse(fs.readFileSync(new URL('../rn-hub-index.json',import.meta.url)));
 function memoryCache(){
  const store=new Map();
- return {store,async get(k,type){const x=store.get(k);return x===undefined?null:type==='json'?JSON.parse(x):x},async put(k,v){store.set(k,v)}};
+ return {store,async get(k,type){const x=store.get(k);return x===undefined?null:type==='json'?JSON.parse(x):x},async put(k,v){store.set(k,v)},async list({prefix,limit=1000}){return{keys:[...store.keys()].filter(name=>name.startsWith(prefix)).slice(0,limit).map(name=>({name}))}}};
 }
 const options={geo:cities,hubIndex:index,rnHubEnabled:true,origin:'taubate',destination:'uberlandia',maxTransfers:2,maxWait:720};
 
@@ -44,4 +44,17 @@ test('segment cache key isolates direction, date, and provider route slugs',asyn
  assert.ok(keys.some(key=>key.includes('2026-10-14:taubate:campinas')));
  assert.ok(keys.some(key=>key.includes('2026-10-14:campinas:taubate')));
  assert.ok(keys.some(key=>key.includes('2026-10-15:taubate:campinas')));
+});
+
+test('cached Taubaté → Campinas and Campinas → Uberlândia legs compose a later journey',async()=>{
+ let offline=false;
+ const upstream=source({'taubate|campinas':[ride('06:00','08:00','first')],
+   'campinas|uberlandia':[ride('09:00','15:00','second')]}),cache=memoryCache();
+ const api=loadWorker({fetch:input=>offline?Promise.reject(new Error('upstream must not be needed for cached route')):upstream.fetch(input),cache});
+ await query(api,{geo:cities,hubIndex:index,rnHubEnabled:true,origin:'taubate',destination:'campinas',mode:'direct',maxTransfers:0,date:'2026-10-31'});
+ await query(api,{geo:cities,hubIndex:index,rnHubEnabled:true,origin:'campinas',destination:'uberlandia',mode:'direct',maxTransfers:0,date:'2026-10-31'});
+ offline=true;
+ const composed=await query(api,{geo:cities,hubIndex:index,rnHubEnabled:true,origin:'taubate',destination:'uberlandia',mode:'transfers',maxTransfers:1,maxWait:720,date:'2026-10-31',debug:'1'});
+ assert.ok(composed.body.routes.some(route=>route.legs.map(leg=>`${leg.from}|${leg.to}`).join(',')==='taubate|campinas,campinas|uberlandia'),JSON.stringify(composed.body.diagnostics));
+ assert.ok(composed.body.diagnostics.cachedHubs.includes('campinas:SP'));
 });

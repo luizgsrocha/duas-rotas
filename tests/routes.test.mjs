@@ -16,11 +16,6 @@ test('Taubaté → Campinas → Pirassununga survives an unrelated source failur
   assert.ok(!upstream.calls.includes('taubate|pirassununga'));
 });
 
-test('Campinas remains eligible within 60 km extra',()=>{
-  const api=loadWorker();
-  assert.ok(api.selectBrgHubs(cities,cities[0],cities[1]).some(c=>c.slug==='campinas'));
-});
-
 for(const limit of [0,1,2,3,4])test('maximum '+limit+' transfers is applied during graph expansion',async()=>{
   const geo=Array.from({length:7},(_,i)=>city('city-'+i,0,i*.1));
   const offers={};
