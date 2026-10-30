@@ -13,6 +13,10 @@ versionamento semântico. Datas usam UTC.
 - Arquitetura inerte de execução recorrente, merge controlado e monitoramento do
   deploy existente via Cloudflare Workers Builds, com runbook de rollback.
 
+### Changed
+
+- Redesenho responsivo e compacto das rotas em destaque na página inicial.
+
 ## [0.0.0] - 2026-10-04
 
 - Início do histórico retroativo. Versões funcionais anteriores permanecem no Git.
