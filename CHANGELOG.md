@@ -21,6 +21,8 @@ versionamento semântico. Datas usam UTC.
 
 ### Fixed
 
+- Monitor pós-deploy passa a aguardar o check do Cloudflare após cada `push` em
+  `main` e confirma que a versão publicada corresponde ao commit verificado.
 - CI deixa de referenciar `tests/transfer-search.test.cjs`, removido junto com o
   algoritmo legado, e valida que todos os alvos de teste dos workflows existem.
 - Cache de trechos ganhou regressão funcional para expiração após dez minutos.

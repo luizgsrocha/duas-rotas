@@ -32,11 +32,20 @@ test('transfer regression runs the current routing contracts, never the removed 
 
 test('automation keeps post-deploy smoke and circuit breaker fail-safe controls',()=>{
  const smoke=readFileSync(new URL('.github/workflows/smoke.yml',root),'utf8');
- assert.match(smoke,/check_run:/);
+ assert.match(smoke,/push:/);
+ assert.match(smoke,/branches: \[main\]/);
+ assert.match(smoke,/checks: read/);
  assert.match(smoke,/Workers Builds: rua-nossa/);
- assert.match(smoke,/check_suite\.head_branch == 'main'/);
- assert.match(smoke,/check_run\.conclusion == 'success'/);
+ assert.match(smoke,/build\.conclusion !== 'success'/);
+ assert.match(smoke,/scripts\/smoke\.mjs/);
  const autonomous=readFileSync(new URL('.github/workflows/autonomous-cycle.yml',root),'utf8');
  assert.match(autonomous,/AUTONOMY_ENABLED == 'true'/);
  assert.match(autonomous,/AUTONOMY_CIRCUIT_BREAKER != 'open'/);
+});
+
+test('published smoke verifies the checked-out release marker',()=>{
+ const smoke=readFileSync(new URL('scripts/smoke.mjs',root),'utf8');
+ assert.match(smoke,/expectedAsset/);
+ assert.match(smoke,/Published release does not match/);
+ assert.match(smoke,/app\\\.js\\\?v=/);
 });
