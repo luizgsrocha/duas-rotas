@@ -7,7 +7,7 @@ concluído.
 
 | Ordem | Prioridade | Estado | Trabalho | Dependência / aceite mínimo |
 |---:|---|---|---|---|
-| 1 | P0 | in_progress | Fundação autônoma (#147) | Branch `agent/147-automerge-gate`; ruleset e auto-merge ativos, faltam GitHub App, runner e credenciais conforme `ACTIVATION.md` |
+| 1 | P0 | in_progress | Fundação autônoma (#147) | PR #162; ruleset e auto-merge ativos, faltam GitHub App, runner e credenciais conforme `ACTIVATION.md` |
 | 2 | P1 | blocked | SEO, sitemap e histórico (#146) | Resolver/rebasear PR #146; testes, links canônicos e sitemap validados |
 | 3 | P1 | ready | Monitorar regressão de falhas upstream 403 (#145) | Main já contém #145; ampliar somente com nova evidência reproduzível |
 | 4 | P1 | blocked | Auditoria nacional de slugs (#143) | Execução manual com data explícita; revisar artefato antes de alterar slugs |
