@@ -5,9 +5,18 @@ import {loadWorker,query,source,ride} from './helpers/worker.mjs';
 
 const cities=JSON.parse(fs.readFileSync(new URL('../cities.json',import.meta.url)));
 const index=JSON.parse(fs.readFileSync(new URL('../rn-hub-index.json',import.meta.url)));
-function memoryCache(){
+function memoryCache({now=()=>Date.now()}={}){
  const store=new Map();
- return {store,async get(k,type){const x=store.get(k);return x===undefined?null:type==='json'?JSON.parse(x):x},async put(k,v){store.set(k,v)},async list({prefix,limit=1000}){return{keys:[...store.keys()].filter(name=>name.startsWith(prefix)).slice(0,limit).map(name=>({name}))}}};
+ const live=key=>{
+  const entry=store.get(key);
+  if(entry&&entry.expiresAt<=now()){store.delete(key);return null}
+  return entry??null;
+ };
+ return {store,
+  async get(k,type){const entry=live(k);return entry===null?null:type==='json'?JSON.parse(entry.value):entry.value},
+  async put(k,v,{expirationTtl=Infinity}={}){store.set(k,{value:v,expiresAt:now()+expirationTtl*1000})},
+  async list({prefix,limit=1000}){return{keys:[...store.keys()].filter(name=>live(name)&&name.startsWith(prefix)).slice(0,limit).map(name=>({name}))}}
+ };
 }
 const options={geo:cities,hubIndex:index,rnHubEnabled:true,origin:'taubate',destination:'uberlandia',maxTransfers:2,maxWait:720};
 
@@ -30,6 +39,21 @@ test('source errors are not cached and can recover on the next request',async()=
  await query(api,options);const afterFailure=calls;shouldFail=false;
  const recovered=await query(api,options);
  assert.ok(calls>afterFailure);assert.ok(recovered.body.count>0);
+});
+
+test('successful segment cache expires after ten minutes',async()=>{
+ let now=0;
+ const upstream=source({'taubate|campinas':[ride('06:00','08:00')]}),cache=memoryCache({now:()=>now});
+ const api=loadWorker({fetch:upstream.fetch,cache,clock:()=>now});
+ const options={origin:'taubate',destination:'campinas',mode:'direct',maxTransfers:0,date:'2026-10-31'};
+ const first=await query(api,options);
+ assert.equal(first.body.count,1);assert.equal(upstream.calls.length,1);
+ now=599_000;
+ const cached=await query(api,options);
+ assert.equal(cached.body.count,1);assert.equal(upstream.calls.length,1);
+ now=600_001;
+ const refreshed=await query(api,options);
+ assert.equal(refreshed.body.count,1);assert.equal(upstream.calls.length,2);
 });
 
 test('segment cache key isolates direction, date, and provider route slugs',async()=>{
