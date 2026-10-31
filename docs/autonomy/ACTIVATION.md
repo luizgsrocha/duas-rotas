@@ -10,7 +10,8 @@ validar cada item e registrar evidência sem valores secretos.
       `quality-gates / browser`, `quality-gates / security` e
       `Transfer regression / transfer-tests` obrigatórios.
 - [ ] Bloquear force-push/deleção e impedir bypass pela identidade do agente.
-- [ ] Habilitar auto-merge e excluir branches após merge.
+- [ ] Habilitar auto-merge e excluir branches após merge; a tentativa pela
+      integração atual em 2026-10-31 retornou HTTP 403 e exige administrador.
 - [ ] Criar GitHub App do agente com `Contents: write`, `Pull requests: write`,
       `Issues: write`, `Metadata: read`, sem Administration/Secrets/Environments.
 - [ ] Usar `GITHUB_TOKEN` padrão (`contents: read`) nos testes. Criar App separada
@@ -41,7 +42,7 @@ validar cada item e registrar evidência sem valores secretos.
       ao status necessário; a identidade de build fica na Cloudflare, não no GitHub.
 - [ ] Habilitar histórico de versões e registrar deployment/version ID por commit.
 - [ ] Definir `PRODUCTION_BASE_URL` para smoke somente leitura e validar alertas.
-- [ ] Confirmar que cada `push` em `main` inicia `Published site smoke`, aguarda o
+- [x] Confirmar que cada `push` em `main` inicia `Published site smoke`, aguarda o
       check `Workers Builds: rua-nossa` e valida a mesma versão publicada; manter
       também a execução diária como fallback.
 - [ ] Ensaiar `wrangler versions list` e `wrangler rollback <version-id>` em Worker
@@ -60,9 +61,11 @@ validar cada item e registrar evidência sem valores secretos.
 
 ## Estado observado em 2026-10-31
 
-- Auto-merge: desabilitado; rulesets retornaram lista vazia.
+- Auto-merge: desabilitado; tentativa de ativação via API retornou HTTP 403;
+  rulesets retornaram lista vazia.
 - Proteção de `main`: não verificável, pois a integração recebeu HTTP 403.
 - O PR #158 foi mesclado apesar da falha em `Transfer regression / transfer-tests`;
   portanto esse check não estava protegido como obrigatório naquele momento.
 - Cloudflare: `main` publica via Workers Builds e este desenho o preserva como único
-  controlador; não há credenciais Cloudflare neste ambiente e nenhum deploy ocorreu.
+  controlador; o run `41206952186` comprovou espera pelo build, correspondência da
+  versão e smoke pós-deploy. Não há credenciais Cloudflare neste ambiente.
