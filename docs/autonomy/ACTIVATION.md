@@ -21,8 +21,9 @@ validar cada item e registrar evidência sem valores secretos.
 - [ ] Definir variables booleanas de ativação uma por vez; nunca usar secret como
       booleano de controle.
 - [ ] Definir `AUTONOMY_APP_LOGIN` com o login exato da GitHub App e somente então
-      `AUTO_MERGE_ENABLED=true`; o gate exige autor, rótulo `autonomy:candidate`,
-      ausência de `do-not-merge` e deixa os checks obrigatórios decidirem o merge.
+      `AUTO_MERGE_ENABLED=true`; o gate exige circuit breaker `closed`, autor,
+      rótulo `autonomy:candidate`, ausência de `do-not-merge`, rejeita caminhos
+      sensíveis diretamente e deixa os checks obrigatórios decidirem o merge.
 - [ ] Definir `AUTONOMY_CIRCUIT_BREAKER=closed` somente após o ensaio manual; mudar
       para `open` interrompe novos ciclos sem cancelar uma execução já iniciada.
 
