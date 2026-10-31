@@ -49,3 +49,17 @@ test('published smoke verifies the checked-out release marker',()=>{
  assert.match(smoke,/Published release does not match/);
  assert.match(smoke,/app\\\.js\\\?v=/);
 });
+
+test('autonomous merge gate is scoped to the expected app, label and ruleset',()=>{
+ const merge=readFileSync(new URL('.github/workflows/autonomous-merge.yml',root),'utf8');
+ assert.match(merge,/pull_request_target:/);
+ assert.match(merge,/AUTO_MERGE_ENABLED == 'true'/);
+ assert.match(merge,/AUTONOMY_CIRCUIT_BREAKER == 'closed'/);
+ assert.match(merge,/user\.login == vars\.AUTONOMY_APP_LOGIN/);
+ assert.match(merge,/autonomy:candidate/);
+ assert.match(merge,/do-not-merge/);
+ assert.match(merge,/gh pr merge "\$PR_URL" --auto --squash/);
+ assert.match(merge,/gh pr diff "\$PR_URL" --name-only/);
+ assert.match(merge,/docs\/autonomy/);
+ assert.doesNotMatch(merge,/actions\/checkout/);
+});

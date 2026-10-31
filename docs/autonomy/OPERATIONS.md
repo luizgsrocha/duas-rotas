@@ -36,8 +36,9 @@ Um PR autônomo somente é elegível quando:
 - auto-merge está habilitado no repositório e o circuit breaker está fechado.
 
 O gate deve solicitar auto-merge pela API; não deve fazer merge direto nem usar
-token de administrador. Este PR adiciona somente a especificação: a ativação exige
-ruleset e GitHub App conforme `ACTIVATION.md`.
+token de administrador. `autonomous-merge.yml` solicita o auto-merge nativo apenas
+quando as variáveis de ativação, a GitHub App autora e os rótulos coincidem; o
+ruleset continua sendo a autoridade que bloqueia ou libera o merge.
 
 ## Deploy e rollback
 

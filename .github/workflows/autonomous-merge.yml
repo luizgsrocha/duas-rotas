@@ -1,0 +1,59 @@
+name: autonomous-merge-gate
+
+on:
+  pull_request_target:
+    types: [opened, reopened, labeled, ready_for_review]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: autonomous-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  request-auto-merge:
+    if: >-
+      vars.AUTO_MERGE_ENABLED == 'true' &&
+      vars.AUTONOMY_CIRCUIT_BREAKER == 'closed' &&
+      vars.AUTONOMY_APP_LOGIN != '' &&
+      github.event.pull_request.user.login == vars.AUTONOMY_APP_LOGIN &&
+      github.event.pull_request.draft == false &&
+      contains(github.event.pull_request.labels.*.name, 'autonomy:candidate') &&
+      !contains(github.event.pull_request.labels.*.name, 'do-not-merge')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Reject paths that always require human review
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          if gh pr diff "$PR_URL" --name-only | grep -Eq '^(\.github/|wrangler\.toml$|AGENTS\.md$|docs/autonomy/)'; then
+            echo 'Sensitive autonomous changes require human review.' >&2
+            exit 1
+          fi
+      - name: Ask GitHub to merge only after the ruleset passes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge "$PR_URL" --auto --squash
+
+  cancel-auto-merge:
+    if: >-
+      vars.AUTONOMY_APP_LOGIN != '' &&
+      github.event.pull_request.user.login == vars.AUTONOMY_APP_LOGIN &&
+      contains(github.event.pull_request.labels.*.name, 'do-not-merge')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Cancel a pending autonomous merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          enabled=$(gh pr view "$PR_URL" --json autoMergeRequest --jq '.autoMergeRequest != null')
+          if [ "$enabled" = true ]; then
+            gh pr merge "$PR_URL" --disable-auto
+          fi
