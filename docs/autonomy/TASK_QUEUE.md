@@ -1,13 +1,13 @@
 # Fila priorizada de trabalho autônomo
 
-Atualizada em 2026-10-29. O coordenador escolhe a primeira linha `ready` por
+Atualizada em 2026-10-31. O coordenador escolhe a primeira linha `ready` por
 prioridade; `blocked` não pode ser contornada. Alterações nesta tabela passam por
 PR. IDs apontam para a evidência existente, não significam que o trabalho esteja
 concluído.
 
 | Ordem | Prioridade | Estado | Trabalho | Dependência / aceite mínimo |
 |---:|---|---|---|---|
-| 1 | P0 | in_progress | Fundação autônoma (#147) | PR #159; corrigir gates antes da ativação humana conforme `ACTIVATION.md` |
+| 1 | P0 | in_progress | Fundação autônoma (#147) | PR #160; validar monitor pós-deploy antes da ativação humana conforme `ACTIVATION.md` |
 | 2 | P1 | blocked | SEO, sitemap e histórico (#146) | Resolver/rebasear PR #146; testes, links canônicos e sitemap validados |
 | 3 | P1 | ready | Monitorar regressão de falhas upstream 403 (#145) | Main já contém #145; ampliar somente com nova evidência reproduzível |
 | 4 | P1 | blocked | Auditoria nacional de slugs (#143) | Execução manual com data explícita; revisar artefato antes de alterar slugs |

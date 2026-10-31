@@ -41,8 +41,9 @@ validar cada item e registrar evidência sem valores secretos.
       ao status necessário; a identidade de build fica na Cloudflare, não no GitHub.
 - [ ] Habilitar histórico de versões e registrar deployment/version ID por commit.
 - [ ] Definir `PRODUCTION_BASE_URL` para smoke somente leitura e validar alertas.
-- [ ] Confirmar que o evento de conclusão `Workers Builds: rua-nossa` em `main`
-      inicia `Published site smoke`; manter também a execução diária como fallback.
+- [ ] Confirmar que cada `push` em `main` inicia `Published site smoke`, aguarda o
+      check `Workers Builds: rua-nossa` e valida a mesma versão publicada; manter
+      também a execução diária como fallback.
 - [ ] Ensaiar `wrangler versions list` e `wrangler rollback <version-id>` em Worker
       isolado antes de autorizar rollback de produção.
 - [ ] Se rollback automático for aprovado no futuro: `CLOUDFLARE_ACCOUNT_ID` como
