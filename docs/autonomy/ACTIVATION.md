@@ -5,13 +5,13 @@ validar cada item e registrar evidência sem valores secretos.
 
 ## GitHub
 
-- [ ] Criar ruleset para `main`: PR obrigatório, branch atualizada, conversas
+- [x] Criar ruleset para `main`: PR obrigatório, branch atualizada, conversas
       resolvidas, ao menos 1 aprovação e checks `quality-gates / unit-and-static`,
       `quality-gates / browser`, `quality-gates / security` e
       `Transfer regression / transfer-tests` obrigatórios.
-- [ ] Bloquear force-push/deleção e impedir bypass pela identidade do agente.
-- [ ] Habilitar auto-merge e excluir branches após merge; a tentativa pela
-      integração atual em 2026-10-31 retornou HTTP 403 e exige administrador.
+- [x] Bloquear force-push/deleção e impedir bypass pela identidade do agente.
+- [x] Habilitar auto-merge nativo no repositório.
+- [ ] Excluir branches automaticamente após merge, se desejado pelo operador.
 - [ ] Criar GitHub App do agente com `Contents: write`, `Pull requests: write`,
       `Issues: write`, `Metadata: read`, sem Administration/Secrets/Environments.
 - [ ] Usar `GITHUB_TOKEN` padrão (`contents: read`) nos testes. Criar App separada
@@ -20,6 +20,9 @@ validar cada item e registrar evidência sem valores secretos.
       automatizado for aprovado no futuro; sem self-review e restrito a `main`.
 - [ ] Definir variables booleanas de ativação uma por vez; nunca usar secret como
       booleano de controle.
+- [ ] Definir `AUTONOMY_APP_LOGIN` com o login exato da GitHub App e somente então
+      `AUTO_MERGE_ENABLED=true`; o gate exige autor, rótulo `autonomy:candidate`,
+      ausência de `do-not-merge` e deixa os checks obrigatórios decidirem o merge.
 - [ ] Definir `AUTONOMY_CIRCUIT_BREAKER=closed` somente após o ensaio manual; mudar
       para `open` interrompe novos ciclos sem cancelar uma execução já iniciada.
 
@@ -61,9 +64,9 @@ validar cada item e registrar evidência sem valores secretos.
 
 ## Estado observado em 2026-10-31
 
-- Auto-merge: desabilitado; tentativa de ativação via API retornou HTTP 403;
-  rulesets retornaram lista vazia.
-- Proteção de `main`: não verificável, pois a integração recebeu HTTP 403.
+- Auto-merge: habilitado. O ruleset `main-blocked-ruleset` está ativo na `main`
+  com PR obrigatório, branch atualizada, conversas resolvidas, sem bypass e sete
+  checks obrigatórios.
 - O PR #158 foi mesclado apesar da falha em `Transfer regression / transfer-tests`;
   portanto esse check não estava protegido como obrigatório naquele momento.
 - Cloudflare: `main` publica via Workers Builds e este desenho o preserva como único

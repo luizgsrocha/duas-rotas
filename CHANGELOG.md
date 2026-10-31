@@ -7,6 +7,8 @@ versionamento semântico. Datas usam UTC.
 
 ### Added
 
+- Gate fail-closed para solicitar auto-merge somente em PRs candidatos da GitHub
+  App esperada, mantendo o ruleset como autoridade de liberação.
 - Metadados SEO, sitemap, robots, guias de rotas e histórico público v0.10.0.
 - Contrato permanente de agentes, fila priorizada e runbooks de ativação.
 - Quality gates para testes, browser, segurança e validação Cloudflare sem deploy.
