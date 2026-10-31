@@ -19,10 +19,10 @@ de ativação, `AUTONOMY_ENABLED`, `AUTO_MERGE_ENABLED`, `STAGING_DEPLOY_ENABLED
 ## Recorrência e concorrência
 
 O workflow `autonomous-cycle.yml` acorda a cada hora, usa `concurrency` sem
-cancelamento e só chama o runner quando `AUTONOMY_ENABLED=true`. O runner recebe
-uma cópia limpa, lê `AGENTS.md`, reivindica uma tarefa e encerra após um PR. O
-estado durável é a fila versionada, issues/PRs e artefatos do Actions — nunca a
-memória de uma sessão.
+cancelamento e só chama o runner quando `AUTONOMY_ENABLED=true` e
+`AUTONOMY_CIRCUIT_BREAKER` não está `open`. O runner recebe uma cópia limpa, lê
+`AGENTS.md`, reivindica uma tarefa e encerra após um PR. O estado durável é a fila
+versionada, issues/PRs e artefatos do Actions — nunca a memória de uma sessão.
 
 ## Gates de merge
 
@@ -47,7 +47,8 @@ de deploy nem publica uma segunda vez. O fluxo alvo:
 
 1. merge elegível em `main` dispara o build da Cloudflare;
 2. o monitor aguarda o deployment/version ID e registra commit, horário e estado;
-3. smoke somente leitura valida a URL publicada;
+3. a conclusão bem-sucedida do check do Workers Builds dispara smoke somente
+   leitura da URL publicada; a execução diária é o fallback;
 4. nesta primeira fase, uma falha abre alerta/issue e exige rollback humano com
    `wrangler rollback <previous-version-id>` no painel ou CLI autorizado;
 5. depois de validar rollback em ambiente isolado, uma fase futura poderá entregar

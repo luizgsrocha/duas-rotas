@@ -7,7 +7,8 @@ validar cada item e registrar evidência sem valores secretos.
 
 - [ ] Criar ruleset para `main`: PR obrigatório, branch atualizada, conversas
       resolvidas, ao menos 1 aprovação e checks `quality-gates / unit-and-static`,
-      `quality-gates / browser` e `quality-gates / security` obrigatórios.
+      `quality-gates / browser`, `quality-gates / security` e
+      `Transfer regression / transfer-tests` obrigatórios.
 - [ ] Bloquear force-push/deleção e impedir bypass pela identidade do agente.
 - [ ] Habilitar auto-merge e excluir branches após merge.
 - [ ] Criar GitHub App do agente com `Contents: write`, `Pull requests: write`,
@@ -18,6 +19,8 @@ validar cada item e registrar evidência sem valores secretos.
       automatizado for aprovado no futuro; sem self-review e restrito a `main`.
 - [ ] Definir variables booleanas de ativação uma por vez; nunca usar secret como
       booleano de controle.
+- [ ] Definir `AUTONOMY_CIRCUIT_BREAKER=closed` somente após o ensaio manual; mudar
+      para `open` interrompe novos ciclos sem cancelar uma execução já iniciada.
 
 ## Executor de agente
 
@@ -38,6 +41,8 @@ validar cada item e registrar evidência sem valores secretos.
       ao status necessário; a identidade de build fica na Cloudflare, não no GitHub.
 - [ ] Habilitar histórico de versões e registrar deployment/version ID por commit.
 - [ ] Definir `PRODUCTION_BASE_URL` para smoke somente leitura e validar alertas.
+- [ ] Confirmar que o evento de conclusão `Workers Builds: rua-nossa` em `main`
+      inicia `Published site smoke`; manter também a execução diária como fallback.
 - [ ] Ensaiar `wrangler versions list` e `wrangler rollback <version-id>` em Worker
       isolado antes de autorizar rollback de produção.
 - [ ] Se rollback automático for aprovado no futuro: `CLOUDFLARE_ACCOUNT_ID` como
@@ -52,9 +57,11 @@ validar cada item e registrar evidência sem valores secretos.
 - [ ] O relatório lê metadados de Actions/GitHub/Cloudflare; permissões de leitura
       para Actions, PRs, deployments e billing/custos apenas quando disponíveis.
 
-## Estado observado em 2026-10-29
+## Estado observado em 2026-10-31
 
 - Auto-merge: desabilitado; rulesets retornaram lista vazia.
 - Proteção de `main`: não verificável, pois a integração recebeu HTTP 403.
+- O PR #158 foi mesclado apesar da falha em `Transfer regression / transfer-tests`;
+  portanto esse check não estava protegido como obrigatório naquele momento.
 - Cloudflare: `main` publica via Workers Builds e este desenho o preserva como único
   controlador; não há credenciais Cloudflare neste ambiente e nenhum deploy ocorreu.

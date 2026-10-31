@@ -1,5 +1,7 @@
 name: Published site smoke
 on:
+  check_run:
+    types: [completed]
   workflow_dispatch:
   schedule:
     - cron: '0 12 * * *'
@@ -7,10 +9,19 @@ permissions:
   contents: read
 jobs:
   smoke:
-    runs-on: ubuntu-latest
+    if: >-
+      github.event_name != 'check_run' ||
+      (github.event.check_run.name == 'Workers Builds: rua-nossa' &&
+      github.event.check_run.conclusion == 'success' &&
+      github.event.check_run.check_suite.head_branch == 'main')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - run: node scripts/smoke.mjs
+      - name: Check the published application without changing data
+        env:
+          SITE_URL: ${{ vars.PRODUCTION_BASE_URL }}
+        run: node scripts/smoke.mjs

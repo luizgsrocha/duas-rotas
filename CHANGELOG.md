@@ -15,7 +15,15 @@ versionamento semântico. Datas usam UTC.
 
 ### Changed
 
+- Regressão de transferências passa a executar os testes atuais de rotas, RN-HUB,
+  cache e falhas upstream; os gates de browser cobrem todos os fluxos existentes.
 - Lista de cidades restaurada nos campos vazios, com ranking e fuzzy preservados.
+
+### Fixed
+
+- CI deixa de referenciar `tests/transfer-search.test.cjs`, removido junto com o
+  algoritmo legado, e valida que todos os alvos de teste dos workflows existem.
+- Cache de trechos ganhou regressão funcional para expiração após dez minutos.
 - Rotas em destaque agora preenchem a busca diretamente, sem página intermediária.
 - Redesenho responsivo e compacto das rotas em destaque na página inicial.
 
