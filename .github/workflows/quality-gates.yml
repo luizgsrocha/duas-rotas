@@ -40,6 +40,9 @@ jobs:
       - run: npm install --no-save --ignore-scripts playwright@1.56.1
       - run: npx playwright install --with-deps chromium
       - run: node scripts/test-autocomplete-ui.mjs
+      - run: node scripts/test-seo-ui.mjs
+      - run: node scripts/test-search-cancellation-ui.mjs
+      - run: node scripts/test-location-ui.mjs
 
   security:
     runs-on: ubuntu-24.04

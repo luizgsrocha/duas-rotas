@@ -14,7 +14,9 @@ concurrency:
 
 jobs:
   cycle:
-    if: vars.AUTONOMY_ENABLED == 'true'
+    if: >-
+      vars.AUTONOMY_ENABLED == 'true' &&
+      vars.AUTONOMY_CIRCUIT_BREAKER != 'open'
     runs-on: [self-hosted, autonomous-dev]
     timeout-minutes: 50
     steps:
