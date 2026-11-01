@@ -6,7 +6,7 @@ validar cada item e registrar evidência sem valores secretos.
 ## GitHub
 
 - [x] Criar ruleset para `main`: PR obrigatório, branch atualizada, conversas
-      resolvidas, ao menos 1 aprovação e checks `quality-gates / unit-and-static`,
+      resolvidas, zero aprovações para o operador individual e checks `quality-gates / unit-and-static`,
       `quality-gates / browser`, `quality-gates / security` e
       `Transfer regression / transfer-tests` obrigatórios.
 - [x] Bloquear force-push/deleção e impedir bypass pela identidade do agente.
@@ -29,14 +29,18 @@ validar cada item e registrar evidência sem valores secretos.
 
 ## Executor de agente
 
-- [ ] Runner efêmero rotulado `autonomous-dev`, sem acesso à rede interna, Docker
-      socket, home persistente ou credenciais de produção.
+- [x] Validar runner GitHub-hosted efêmero sem credenciais nem mutações; runs
+      `41304582338` e `41304600282` concluídos com sucesso.
+- [ ] Aceitar formalmente o egress público do GitHub-hosted ou provisionar runner
+      com allowlist; nenhum token de escrita deve ser entregue antes dessa decisão.
 - [ ] `OPENAI_API_KEY`/identidade equivalente limitada por projeto e orçamento;
       token GitHub App de curta duração; nenhum PAT pessoal.
 - [ ] Limites de custo, timeout e alerta; logs com redaction; egress allowlist para
       GitHub, registro de pacotes e API do modelo.
-- [ ] Confirmar comando e versão fixada do executor Codex em um teste manual antes
-      de definir `AUTONOMY_ENABLED=true`.
+- [x] Instalar uma versão exata do Codex sem autenticação: `@openai/codex@0.166.0`
+      validado no run `41305030433`, sem chamada ao modelo ou escrita.
+- [ ] Executar ciclo autenticado supervisionado com tarefa fictícia, limites de
+      custo e identidade App antes de definir `AUTONOMY_ENABLED=true`.
 
 ## Cloudflare
 
@@ -63,7 +67,7 @@ validar cada item e registrar evidência sem valores secretos.
 - [ ] O relatório lê metadados de Actions/GitHub/Cloudflare; permissões de leitura
       para Actions, PRs, deployments e billing/custos apenas quando disponíveis.
 
-## Estado observado em 2026-10-31
+## Estado observado em 2026-11-01
 
 - Auto-merge: habilitado. O ruleset `main-blocked-ruleset` está ativo na `main`
   com PR obrigatório, branch atualizada, conversas resolvidas, sem bypass e sete
@@ -73,6 +77,9 @@ validar cada item e registrar evidência sem valores secretos.
 - Cloudflare: `main` publica via Workers Builds e este desenho o preserva como único
   controlador; o run `41206952186` comprovou espera pelo build, correspondência da
   versão e smoke pós-deploy. Não há credenciais Cloudflare neste ambiente.
+- Executor: runner GitHub-hosted e instalação do Codex 0.166.0 foram comprovados
+  sem secrets. O ciclo real continua fail-closed até App, credencial do modelo,
+  orçamento e ensaio autenticado.
 
 
 ## Plano de implantação do executor — issue #147 (pendente)

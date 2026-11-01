@@ -17,6 +17,8 @@ versionamento semântico. Datas usam UTC.
 
 ### Changed
 
+- Estado da autonomia registra os preflights reais do runner GitHub-hosted e da
+  instalação exata do Codex 0.166.0, mantendo a ativação bloqueada sem credenciais.
 - Regressão de transferências passa a executar os testes atuais de rotas, RN-HUB,
   cache e falhas upstream; os gates de browser cobrem todos os fluxos existentes.
 - Lista de cidades restaurada nos campos vazios, com ranking e fuzzy preservados.
