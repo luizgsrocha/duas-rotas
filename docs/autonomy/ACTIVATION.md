@@ -48,7 +48,7 @@ O job `authenticated-supervised-trial` é exclusivamente manual, usa o environme
 `autonomy-trial` e exige a confirmação `EXECUTAR ENSAIO AUTENTICADO`. Configure no
 environment, nunca no código:
 
-- secrets `AUTONOMY_APP_ID`, `AUTONOMY_APP_PRIVATE_KEY` e `OPENAI_API_KEY`;
+- secrets `AUTONOMY_APP_ID`, `AUTONOMY_APP_PRIVATE_KEY` e `CODEX_API_KEY`;
 - variable `AUTONOMY_MODEL` com um modelo permitido pelo projeto OpenAI;
 - aprovação humana obrigatória antes de liberar o job.
 
