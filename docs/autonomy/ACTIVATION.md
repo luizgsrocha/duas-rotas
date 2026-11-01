@@ -54,7 +54,9 @@ validar cada item e registrar evidência sem valores secretos.
       check `Workers Builds: rua-nossa` e valida a mesma versão publicada; manter
       também a execução diária como fallback.
 - [ ] Ensaiar `wrangler versions list` e `wrangler rollback <version-id>` em Worker
-      isolado antes de autorizar rollback de produção.
+      isolado antes de autorizar rollback de produção. O workflow manual
+      `rollback-drill-setup.yml` provisiona duas versões somente no Worker fixo
+      `duas-rotas-rollback-drill`, testa rollback e restaura a versão atual.
 - [ ] Se rollback automático for aprovado no futuro: `CLOUDFLARE_ACCOUNT_ID` como
       variável e token separado, restrito à conta e a `Workers Scripts: Edit`,
       guardado apenas no environment `rollback-production` com aprovação humana.

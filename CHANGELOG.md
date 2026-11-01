@@ -9,6 +9,8 @@ versionamento semântico. Datas usam UTC.
 
 - Relatório diário idempotente na issue #147 e workflow manual de rollback que
   aceita somente Worker isolado, restaura a versão original e rejeita produção.
+- Ensaio protegido que provisiona duas versões no Worker descartável fixo,
+  comprova rollback e restauração pelo conteúdo retornado em cada versão.
 - Gate fail-closed para solicitar auto-merge somente em PRs candidatos da GitHub
   App esperada, mantendo o ruleset como autoridade de liberação.
 - Metadados SEO, sitemap, robots, guias de rotas e histórico público v0.10.0.
