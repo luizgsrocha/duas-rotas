@@ -161,3 +161,22 @@ rede configurável nem ausência absoluta de acesso a serviços públicos.
 Validar essas propriedades ou escolher infraestrutura mais restrita antes
 de fornecer tokens com permissão de escrita. O workflow de preflight
 não deve ser usado como prova de desenvolvimento autônomo.
+
+
+## Ensaio de instalação do Codex (sem autenticação)
+
+Após revisão e merge do PR correspondente, execute manualmente
+`autonomous-cycle` na `main` com `dry_run=true`,
+`codex_install_test=true` e `codex_version` definida como versão
+**exata** do pacote npm `@openai/codex` verificada pelo operador.
+Não use `latest`. O job `codex-install-preflight` usa runner hospedado,
+Node 22, instala a versão escolhida com scripts npm desabilitados e executa
+somente `codex --version`. Não recebe `OPENAI_API_KEY`, não chama modelos,
+não altera código e não autoriza merge/deploy.
+
+**Importante:** versão exata não equivale a pin por hash de integridade.
+Antes de usar segredos, verificar a integridade do pacote, dependências,
+comportamento de rede, permissões e custo. A instalação não configura o
+`AUTONOMY_RUNNER_COMMAND` nem substitui a GitHub App. Manter
+`AUTONOMY_ENABLED` e `AUTO_MERGE_ENABLED` ausentes ou `false`.
+Registrar URL, versão e conclusão do ensaio na issue #147.
