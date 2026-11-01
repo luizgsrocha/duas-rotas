@@ -92,3 +92,17 @@ test('rollback drill can only mutate an explicitly isolated Worker and always re
  assert.match(rollback,/wrangler@4\.47\.0 rollback "\$RESTORE_VERSION_ID"/);
  assert.doesNotMatch(rollback,/wrangler(?:@[^ ]+)? deploy/);
 });
+
+test('rollback provisioning is pinned to the disposable Worker and verifies both states',()=>{
+ const setup=readFileSync(new URL('.github/workflows/rollback-drill-setup.yml',root),'utf8');
+ assert.match(setup,/WORKER_NAME: duas-rotas-rollback-drill/);
+ assert.match(setup,/test "\$WORKER_NAME" != 'rua-nossa'/);
+ assert.match(setup,/wrangler@4\.47\.0 deploy scripts\/rollback-drill-worker\.mjs/);
+ assert.match(setup,/DRILL_VERSION:v1/);
+ assert.match(setup,/DRILL_VERSION:v2/);
+ assert.match(setup,/rollback "\$TARGET_VERSION_ID"/);
+ assert.match(setup,/rollback "\$RESTORE_VERSION_ID"/);
+ assert.match(setup,/if: always\(\) && steps\.deploy_v2\.outcome == 'success'/);
+ assert.match(setup,/version!=='v1'/);
+ assert.match(setup,/version!=='v2'/);
+});
