@@ -10,6 +10,16 @@ on:
         type: boolean
         required: true
         default: true
+      codex_install_test:
+        description: 'Instalar e verificar Codex CLI sem API key nem execução de modelo'
+        type: boolean
+        required: true
+        default: false
+      codex_version:
+        description: 'Versão exata do pacote @openai/codex (ex.: 0.1.0); obrigatório no teste de instalação'
+        type: string
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -20,7 +30,7 @@ concurrency:
 
 jobs:
   hosted-runner-preflight:
-    if: github.event_name == 'workflow_dispatch' && inputs.dry_run == true
+    if: github.event_name == 'workflow_dispatch' && inputs.dry_run == true && inputs.codex_install_test != true
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -38,6 +48,35 @@ jobs:
           test -f docs/autonomy/TASK_QUEUE.md
           test -f docs/autonomy/ACTIVATION.md
           echo 'Hosted runner preflight OK: checkout e contratos disponíveis; nenhuma IA executada.'
+  codex-install-preflight:
+    if: github.event_name == 'workflow_dispatch' && inputs.dry_run == true && inputs.codex_install_test == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Validate exact package version
+        shell: bash
+        env:
+          CODEX_VERSION: ${{ inputs.codex_version }}
+        run: |
+          set -euo pipefail
+          [[ "$CODEX_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]] || {
+            echo 'Informe codex_version com versão exata (sem latest, tags ou intervalos).'
+            exit 1
+          }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Codex CLI without credentials
+        shell: bash
+        env:
+          CODEX_VERSION: ${{ inputs.codex_version }}
+        run: |
+          set -euo pipefail
+          npm install --global --ignore-scripts --no-audit --no-fund "@openai/codex@${CODEX_VERSION}"
+          codex --version
+          echo 'Codex CLI instalado; nenhuma chamada ao modelo ou escrita no repositório.'
   cycle:
     if: >-
       !(github.event_name == 'workflow_dispatch' && inputs.dry_run == true) &&
