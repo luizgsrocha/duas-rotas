@@ -61,11 +61,13 @@ validar cada item e registrar evidência sem valores secretos.
 
 ## Notificações e relatório diário
 
-- [ ] Preferir provedor transacional/service account. Para Gmail: OAuth client,
-      refresh token da caixa dedicada e escopo mínimo `gmail.send`; nunca senha.
-- [ ] Guardar destinatário como variável e credenciais no environment de relatório.
-- [ ] O relatório lê metadados de Actions/GitHub/Cloudflare; permissões de leitura
-      para Actions, PRs, deployments e billing/custos apenas quando disponíveis.
+- [x] Relatório diário sem segredo implementado em `autonomy-report.yml`: atualiza
+      um único comentário na issue #147 com metadados de Actions e PRs das últimas
+      24 horas; não lê logs nem conteúdo de secrets. Ativar somente depois da
+      revisão com `AUTONOMY_REPORT_ENABLED=true`.
+- [ ] Se e-mail externo for necessário no futuro, preferir provedor transacional.
+      Para Gmail: OAuth client, refresh token da caixa dedicada e escopo mínimo
+      `gmail.send`; nunca senha. Guardar destinatário e credenciais no environment.
 
 ## Estado observado em 2026-11-01
 

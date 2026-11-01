@@ -1,0 +1,66 @@
+name: Daily autonomy report
+
+on:
+  schedule:
+    - cron: '23 9 * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: daily-autonomy-report
+  cancel-in-progress: true
+
+jobs:
+  report:
+    if: vars.AUTONOMY_REPORT_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Publish or update the daily report on issue 147
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const marker = '<!-- autonomy-daily-report -->';
+            const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            const runs = await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+              owner: context.repo.owner, repo: context.repo.repo,
+              created: `>=${since.toISOString()}`, per_page: 100,
+            });
+            const prs = await github.paginate(github.rest.pulls.list, {
+              owner: context.repo.owner, repo: context.repo.repo,
+              state: 'all', sort: 'updated', direction: 'desc', per_page: 100,
+            });
+            const recentPrs = prs.filter(pr => new Date(pr.updated_at) >= since);
+            const counts = runs.reduce((result, run) => {
+              const key = run.conclusion || run.status;
+              result[key] = (result[key] || 0) + 1;
+              return result;
+            }, {});
+            const failures = runs.filter(run => ['failure', 'cancelled', 'timed_out'].includes(run.conclusion));
+            const lines = [
+              marker, '## Relatório diário da autonomia', '',
+              `Período: últimas 24 horas até ${new Date().toISOString()}.`, '',
+              `- Workflows: ${runs.length} (${Object.entries(counts).map(([key, value]) => `${key}: ${value}`).join(', ') || 'nenhum'}).`,
+              `- PRs atualizados: ${recentPrs.length}.`,
+              `- Falhas/cancelamentos/timeouts: ${failures.length}.`, '',
+              failures.length ? '### Execuções que exigem atenção' : 'Nenhuma execução exige atenção.',
+              ...failures.slice(0, 10).map(run => `- [${run.name} #${run.run_number}](${run.html_url}): ${run.conclusion}`),
+              '', '_Gerado automaticamente pelo GitHub Actions; não contém segredos nem conteúdo de logs._',
+            ];
+            const body = lines.join('\n');
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: 147, per_page: 100,
+            });
+            const previous = comments.find(comment => comment.user?.type === 'Bot' && comment.body?.includes(marker));
+            if (previous) {
+              await github.rest.issues.updateComment({owner: context.repo.owner, repo: context.repo.repo, comment_id: previous.id, body});
+            } else {
+              await github.rest.issues.createComment({owner: context.repo.owner, repo: context.repo.repo, issue_number: 147, body});
+            }
+
