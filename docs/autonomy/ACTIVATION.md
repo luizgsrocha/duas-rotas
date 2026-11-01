@@ -73,3 +73,61 @@ validar cada item e registrar evidência sem valores secretos.
 - Cloudflare: `main` publica via Workers Builds e este desenho o preserva como único
   controlador; o run `41206952186` comprovou espera pelo build, correspondência da
   versão e smoke pós-deploy. Não há credenciais Cloudflare neste ambiente.
+
+
+## Plano de implantação do executor — issue #147 (pendente)
+
+Este plano é preparatório: **não** ative variáveis, crie credenciais em PR,
+ou considere a automação operacional sem um ensaio registrado.
+
+### 1. Identidade e autorização
+
+1. Operador cria e instala GitHub App exclusivamente neste repositório, com
+   `Metadata: read`, `Contents: write`, `Pull requests: write` e
+   `Issues: write`. Não conceder `Administration`, `Secrets` ou
+   `Environments`.
+2. Guardar chave privada da App somente no cofre do executor; gerar tokens
+   de instalação de curta duração por ciclo. Não usar PAT pessoal.
+3. Registrar `AUTONOMY_APP_LOGIN` exatamente como aparece no autor dos PRs
+   da App. Verificar que o gate rejeita PR de outra identidade.
+
+### 2. Runner e executor
+
+1. Provisionar runner **efêmero**, rotulado `autonomous-dev`, sem Docker socket,
+   rede interna, credenciais de produção ou home persistente. Revogar o runner
+   ao terminar cada ciclo.
+2. Fixar versão e checksum do executor Codex. Configurar identidade do modelo
+   por secret de escopo mínimo e orçamento; nunca imprimir variáveis de ambiente.
+3. Verificar `AUTONOMY_RUNNER_COMMAND` no runner e executar um ensaio manual
+   com tarefa fictícia sem escrita no GitHub. O workflow atual apenas invoca
+   esse executável: ele **não instala** Codex, não injeta credenciais e não
+   implementa a seleção da fila por si só.
+4. Confirmar no executor: leitura de `AGENTS.md`, seleção da primeira tarefa
+   `ready`, trava de concorrência, branch `agent/<issue>-<resumo>`, no máximo
+   um PR por ciclo, limite de 45 minutos e pausas por falha/custo.
+
+### 3. Ensaio com escrita controlada
+
+1. Usar tarefa de teste sem caminhos sensíveis e sem deploy.
+2. Confirmar que a App abre um PR com rótulo `autonomy:candidate`, que os
+   sete checks e a revisão obrigatória bloqueiam merge antes da aprovação.
+3. Ensaiar PR de autor incorreto, ausência do rótulo, `do-not-merge`,
+   `AUTONOMY_CIRCUIT_BREAKER=open` e alteração em `.github/**`; todos devem
+   ser rejeitados pelo gate. Não desabilitar proteções para simular sucesso.
+4. Registrar links dos runs e PRs, hashes e resultados na issue #147.
+
+### 4. Ativação gradual e recuperação
+
+1. Manter `AUTONOMY_ENABLED=false` e `AUTO_MERGE_ENABLED=false` até o
+   ensaio completo. Habilitar primeiro ciclos manuais supervisionados.
+2. Após aprovação humana, fechar circuit breaker e habilitar uma variável
+   por vez. Confirmar que `open` impede novos ciclos.
+3. Manter Workers Builds como único deploy e rollback de produção humano.
+   Ensaiar rollback em Worker isolado e registrar version IDs antes de
+   propor qualquer rollback automático.
+4. Configurar relatório diário com identidade própria e `gmail.send` ou
+   serviço transacional; conferir envio real antes de marcar a etapa concluída.
+
+**Critério de conclusão:** logs verificáveis de runner efêmero, identidade App,
+execução do modelo, PR de ensaio, checks, bloqueios negativos, orçamento,
+smoke e rollback isolado. Sem esses registros, a issue permanece aberta.
