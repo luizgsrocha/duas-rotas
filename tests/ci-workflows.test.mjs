@@ -69,6 +69,7 @@ test('daily autonomy report is bounded, idempotent and never reads logs or secre
  assert.match(report,/schedule:/);
  assert.match(report,/issues: write/);
  assert.match(report,/actions: read/);
+ assert.match(report,/if: vars\.AUTONOMY_REPORT_ENABLED == 'true'/);
  assert.match(report,/autonomy-daily-report/);
  assert.match(report,/updateComment/);
  assert.match(report,/createComment/);
@@ -83,6 +84,9 @@ test('rollback drill can only mutate an explicitly isolated Worker and always re
  assert.match(rollback,/CLOUDFLARE_ROLLBACK_TOKEN/);
  assert.match(rollback,/-rollback-drill/);
  assert.match(rollback,/test "\$WORKER_NAME" != 'rua-nossa'/);
+ assert.match(rollback,/new URL\(process\.env\.ISOLATED_URL\)/);
+ assert.match(rollback,/hostname\.startsWith\(worker\+'\.'\)/);
+ assert.match(rollback,/hostname\.endsWith\('\.workers\.dev'\)/);
  assert.match(rollback,/wrangler@4\.47\.0 rollback "\$TARGET_VERSION_ID"/);
  assert.match(rollback,/if: always\(\) && steps\.versions\.outcome == 'success'/);
  assert.match(rollback,/wrangler@4\.47\.0 rollback "\$RESTORE_VERSION_ID"/);

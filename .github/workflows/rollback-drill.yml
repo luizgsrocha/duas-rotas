@@ -55,7 +55,7 @@ jobs:
           [[ "$TARGET_VERSION_ID" =~ ^[0-9a-f-]{36}$ ]]
           [[ "$RESTORE_VERSION_ID" =~ ^[0-9a-f-]{36}$ ]]
           test "$TARGET_VERSION_ID" != "$RESTORE_VERSION_ID"
-          [[ "$ISOLATED_URL" == "https://${WORKER_NAME}."* || "$ISOLATED_URL" == "https://"*"-${WORKER_NAME}."* ]]
+          node -e "const u=new URL(process.env.ISOLATED_URL);const worker=process.env.WORKER_NAME;if(u.protocol!=='https:'||!u.hostname.startsWith(worker+'.')||!u.hostname.endsWith('.workers.dev')||u.username||u.password||u.pathname!=='/'||u.search||u.hash)throw new Error('isolated_url must be the isolated Worker root URL')"
           test -n "$CLOUDFLARE_API_TOKEN"
           test -n "$CLOUDFLARE_ACCOUNT_ID"
       - name: Verify both versions exist on the isolated Worker

@@ -63,7 +63,8 @@ validar cada item e registrar evidência sem valores secretos.
 
 - [x] Relatório diário sem segredo implementado em `autonomy-report.yml`: atualiza
       um único comentário na issue #147 com metadados de Actions e PRs das últimas
-      24 horas; não lê logs nem conteúdo de secrets.
+      24 horas; não lê logs nem conteúdo de secrets. Ativar somente depois da
+      revisão com `AUTONOMY_REPORT_ENABLED=true`.
 - [ ] Se e-mail externo for necessário no futuro, preferir provedor transacional.
       Para Gmail: OAuth client, refresh token da caixa dedicada e escopo mínimo
       `gmail.send`; nunca senha. Guardar destinatário e credenciais no environment.

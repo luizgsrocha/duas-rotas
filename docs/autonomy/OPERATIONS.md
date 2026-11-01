@@ -75,5 +75,6 @@ SemVer e GitHub Release; cada execução mantém summary e artefato JSON com SHA
 PR, checks, deploy/version ID, rollback, duração e custos disponíveis. Retenção
 recomendada: 90 dias. Relatório diário deve ser gerado desses registros, sem dados
 sensíveis. `autonomy-report.yml` atualiza um único comentário na issue #147 a cada
-dia, usando apenas metadados de Actions e PRs. Isso evita credenciais de e-mail e
-spam; envio externo continua sendo uma integração posterior e separada.
+dia, usando apenas metadados de Actions e PRs. Ele permanece inerte até
+`AUTONOMY_REPORT_ENABLED=true`. Isso evita credenciais de e-mail e spam; envio
+externo continua sendo uma integração posterior e separada.
