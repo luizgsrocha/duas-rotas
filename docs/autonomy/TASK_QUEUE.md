@@ -7,7 +7,7 @@ concluído.
 
 | Ordem | Prioridade | Estado | Trabalho | Dependência / aceite mínimo |
 |---:|---|---|---|---|
-| 1 | P0 | blocked | Fundação autônoma (#147) | PR #167 mesclado com relatório e drill; faltam GitHub App, credencial do modelo, variável do relatório, Worker/token isolados e ensaios autenticados |
+| 1 | P0 | blocked | Fundação autônoma (#147) | Relatório e rollback isolado comprovados no run `41363404781`; faltam GitHub App, credencial e orçamento do modelo, decisão de egress e ciclo autenticado supervisionado |
 | 2 | P1 | blocked | SEO, sitemap e histórico (#146) | Resolver/rebasear PR #146; testes, links canônicos e sitemap validados |
 | 3 | P1 | ready | Monitorar regressão de falhas upstream 403 (#145) | Main já contém #145; ampliar somente com nova evidência reproduzível |
 | 4 | P1 | blocked | Auditoria nacional de slugs (#143) | Execução manual com data explícita; revisar artefato antes de alterar slugs |

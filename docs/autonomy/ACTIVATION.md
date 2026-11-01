@@ -53,10 +53,12 @@ validar cada item e registrar evidência sem valores secretos.
 - [x] Confirmar que cada `push` em `main` inicia `Published site smoke`, aguarda o
       check `Workers Builds: rua-nossa` e valida a mesma versão publicada; manter
       também a execução diária como fallback.
-- [ ] Ensaiar `wrangler versions list` e `wrangler rollback <version-id>` em Worker
+- [x] Ensaiar `wrangler versions list` e `wrangler rollback <version-id>` em Worker
       isolado antes de autorizar rollback de produção. O workflow manual
       `rollback-drill-setup.yml` provisiona duas versões somente no Worker fixo
-      `duas-rotas-rollback-drill`, testa rollback e restaura a versão atual.
+      `duas-rotas-rollback-drill`, testa rollback e restaura a versão atual. O
+      run `41363404781` comprovou deploy v1/v2, rollback para v1 e restauração da
+      v2, com verificações funcionais após cada troca.
 - [ ] Se rollback automático for aprovado no futuro: `CLOUDFLARE_ACCOUNT_ID` como
       variável e token separado, restrito à conta e a `Workers Scripts: Edit`,
       guardado apenas no environment `rollback-production` com aprovação humana.
@@ -84,6 +86,9 @@ validar cada item e registrar evidência sem valores secretos.
 - Executor: runner GitHub-hosted e instalação do Codex 0.166.0 foram comprovados
   sem secrets. O ciclo real continua fail-closed até App, credencial do modelo,
   orçamento e ensaio autenticado.
+- Recuperação: o run protegido `41363404781` concluiu o ciclo de rollback e
+  restauração no Worker isolado `duas-rotas-rollback-drill`. O Worker de produção
+  não foi alvo; rollback de produção continua humano.
 
 
 ## Plano de implantação do executor — issue #147 (pendente)
@@ -133,9 +138,9 @@ ou considere a automação operacional sem um ensaio registrado.
    ensaio completo. Habilitar primeiro ciclos manuais supervisionados.
 2. Após aprovação humana, fechar circuit breaker e habilitar uma variável
    por vez. Confirmar que `open` impede novos ciclos.
-3. Manter Workers Builds como único deploy e rollback de produção humano.
-   Ensaiar rollback em Worker isolado e registrar version IDs antes de
-   propor qualquer rollback automático.
+3. Manter Workers Builds como único deploy e rollback de produção humano. O
+   ensaio isolado foi aprovado no run `41363404781`; qualquer proposta de
+   rollback automático de produção exige revisão e environment próprios.
 4. Configurar relatório diário com identidade própria e `gmail.send` ou
    serviço transacional; conferir envio real antes de marcar a etapa concluída.
 
