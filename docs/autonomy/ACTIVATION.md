@@ -42,6 +42,23 @@ validar cada item e registrar evidência sem valores secretos.
 - [ ] Executar ciclo autenticado supervisionado com tarefa fictícia, limites de
       custo e identidade App antes de definir `AUTONOMY_ENABLED=true`.
 
+### Ensaio autenticado protegido
+
+O job `authenticated-supervised-trial` é exclusivamente manual, usa o environment
+`autonomy-trial` e exige a confirmação `EXECUTAR ENSAIO AUTENTICADO`. Configure no
+environment, nunca no código:
+
+- secrets `AUTONOMY_APP_ID`, `AUTONOMY_APP_PRIVATE_KEY` e `CODEX_API_KEY`;
+- variable `AUTONOMY_MODEL` com um modelo permitido pelo projeto OpenAI;
+- aprovação humana obrigatória antes de liberar o job.
+
+O token da App dura somente durante o job e fica restrito a este repositório. O
+Codex 0.166.0 recebe uma tarefa fixa, roda em sandbox `workspace-write`, sem acesso
+de rede pelo sandbox, e só pode deixar um arquivo novo em `docs/agents/trials/`.
+Uma validação posterior rejeita qualquer arquivo adicional, executa o CI e só
+então a App abre um PR com `autonomy:candidate` e `do-not-merge`. Feche o PR após
+registrar autor, checks, custo observado e bloqueio do auto-merge; não o mescle.
+
 ## Cloudflare
 
 - [ ] Manter Workers Builds como único deploy de `main`; confirmar que o comando de
