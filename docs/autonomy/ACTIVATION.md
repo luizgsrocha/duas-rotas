@@ -131,3 +131,33 @@ ou considere a automação operacional sem um ensaio registrado.
 **Critério de conclusão:** logs verificáveis de runner efêmero, identidade App,
 execução do modelo, PR de ensaio, checks, bloqueios negativos, orçamento,
 smoke e rollback isolado. Sem esses registros, a issue permanece aberta.
+
+
+## Runner hospedado no GitHub — proposta para a issue #147
+
+O workflow `.github/workflows/autonomous-cycle.yml` agora seleciona
+`ubuntu-latest` (runner hospedado e descartável gerenciado pelo GitHub), sem
+necessidade de cadastrar um runner self-hosted. Isso **não equivale** a uma
+máquina isolada com rede de saída restrita ou a um executor Codex instalado.
+
+**Ensaio inicial:** executar manualmente `autonomous-cycle` com
+`dry_run=true` após a revisão e merge deste PR. O job
+`hosted-runner-preflight` só verifica o tipo de runner e a presença de
+`AGENTS.md`, `TASK_QUEUE.md` e `ACTIVATION.md`. Não chama IA, não recebe
+credenciais e não cria commits ou PRs. Registrar URL e conclusão do run na
+issue #147. O ciclo real permanece inerte sem `AUTONOMY_ENABLED=true`.
+
+**Bloqueio intencional:** a etapa `cycle` ainda exige um
+`AUTONOMY_RUNNER_COMMAND` executável. Como o runner hospedado é limpo a cada
+execução, não há comando pré-instalado; habilitar a variável sem adicionar
+instalação verificada do executor fará o ciclo falhar fechado. Antes de
+ativá-lo, criar PR separado que instale versão imutável e verificada do Codex,
+configure credenciais da App e do modelo em secrets protegidos, execute
+tarefa de ensaio e demonstre limites de custo, timeout e rede. Não usar
+`pull_request_target` para executar código não confiável com secrets.
+
+**Limites:** `ubuntu-latest` não garante egress allowlist, isolamento de
+rede configurável nem ausência absoluta de acesso a serviços públicos.
+Validar essas propriedades ou escolher infraestrutura mais restrita antes
+de fornecer tokens com permissão de escrita. O workflow de preflight
+não deve ser usado como prova de desenvolvimento autônomo.
