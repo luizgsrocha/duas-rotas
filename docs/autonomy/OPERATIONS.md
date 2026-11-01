@@ -61,10 +61,19 @@ de deploy nem publica uma segunda vez. O fluxo alvo:
 Nunca inferir sucesso apenas pelo status do commit: o smoke e o ID de versão são
 obrigatórios. Migrações destrutivas e mudanças de bindings não entram no rollback.
 
+O ensaio reproduzível está em `rollback-drill.yml`. Ele aceita somente um Worker
+cujo nome termine em `-rollback-drill`, exige confirmação explícita, verifica os
+dois version IDs, ativa temporariamente a versão anterior e restaura a versão
+original mesmo quando o smoke falha. O environment `rollback-drill` guarda um
+token limitado apenas ao Worker isolado. O workflow rejeita `rua-nossa`, não faz
+deploy e nunca deve receber a credencial de produção.
+
 ## Registros
 
 Cada PR atualiza `CHANGELOG.md` quando muda comportamento. Releases usam tags
 SemVer e GitHub Release; cada execução mantém summary e artefato JSON com SHA,
 PR, checks, deploy/version ID, rollback, duração e custos disponíveis. Retenção
 recomendada: 90 dias. Relatório diário deve ser gerado desses registros, sem dados
-sensíveis; envio de e-mail é uma integração posterior e separada.
+sensíveis. `autonomy-report.yml` atualiza um único comentário na issue #147 a cada
+dia, usando apenas metadados de Actions e PRs. Isso evita credenciais de e-mail e
+spam; envio externo continua sendo uma integração posterior e separada.

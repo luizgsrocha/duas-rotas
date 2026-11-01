@@ -1,0 +1,83 @@
+name: Isolated rollback drill
+
+on:
+  workflow_dispatch:
+    inputs:
+      worker_name:
+        description: 'Worker isolado; o nome deve terminar em -rollback-drill'
+        type: string
+        required: true
+      target_version_id:
+        description: 'Versão anterior que será ativada temporariamente'
+        type: string
+        required: true
+      restore_version_id:
+        description: 'Versão atual que será restaurada ao final'
+        type: string
+        required: true
+      isolated_url:
+        description: 'URL HTTPS do Worker isolado para smoke'
+        type: string
+        required: true
+      confirmation:
+        description: 'Digite ROLLBACK ISOLADO para confirmar'
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: isolated-rollback-drill
+  cancel-in-progress: false
+
+jobs:
+  rollback-and-restore:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: rollback-drill
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_ROLLBACK_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      WORKER_NAME: ${{ inputs.worker_name }}
+      TARGET_VERSION_ID: ${{ inputs.target_version_id }}
+      RESTORE_VERSION_ID: ${{ inputs.restore_version_id }}
+      ISOLATED_URL: ${{ inputs.isolated_url }}
+      CONFIRMATION: ${{ inputs.confirmation }}
+    steps:
+      - name: Validate isolation and credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$CONFIRMATION" = 'ROLLBACK ISOLADO'
+          [[ "$WORKER_NAME" =~ ^[a-z0-9-]+-rollback-drill$ ]]
+          test "$WORKER_NAME" != 'rua-nossa'
+          [[ "$TARGET_VERSION_ID" =~ ^[0-9a-f-]{36}$ ]]
+          [[ "$RESTORE_VERSION_ID" =~ ^[0-9a-f-]{36}$ ]]
+          test "$TARGET_VERSION_ID" != "$RESTORE_VERSION_ID"
+          [[ "$ISOLATED_URL" == "https://${WORKER_NAME}."* || "$ISOLATED_URL" == "https://"*"-${WORKER_NAME}."* ]]
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+      - name: Verify both versions exist on the isolated Worker
+        id: versions
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.47.0 versions list --name "$WORKER_NAME" --json > versions.json
+          node -e "const fs=require('fs');const versions=JSON.parse(fs.readFileSync('versions.json'));const ids=new Set(versions.map(v=>v.id));for(const id of [process.env.TARGET_VERSION_ID,process.env.RESTORE_VERSION_ID])if(!ids.has(id))throw new Error('version not found on isolated Worker')"
+      - name: Roll back the isolated Worker
+        id: rollback
+        shell: bash
+        run: npx --yes wrangler@4.47.0 rollback "$TARGET_VERSION_ID" --name "$WORKER_NAME" --message 'Automated isolated rollback drill' --yes
+      - name: Smoke the rolled-back isolated Worker
+        shell: bash
+        run: curl --fail --silent --show-error --location --max-time 20 --retry 2 --retry-all-errors "$ISOLATED_URL" >/dev/null
+      - name: Restore the original isolated version
+        if: always() && steps.versions.outcome == 'success'
+        shell: bash
+        run: npx --yes wrangler@4.47.0 rollback "$RESTORE_VERSION_ID" --name "$WORKER_NAME" --message 'Restore after isolated rollback drill' --yes
+      - name: Verify restoration
+        if: always() && steps.versions.outcome == 'success'
+        shell: bash
+        run: curl --fail --silent --show-error --location --max-time 20 --retry 2 --retry-all-errors "$ISOLATED_URL" >/dev/null
+
