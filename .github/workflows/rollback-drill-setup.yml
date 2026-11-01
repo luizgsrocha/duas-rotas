@@ -61,13 +61,13 @@ jobs:
           node -e "const fs=require('fs');const versions=JSON.parse(fs.readFileSync('versions-v2.json'));const newest=versions.at(-1);if(!newest?.id||newest.id===process.env.TARGET_VERSION_ID)throw new Error('second version missing');fs.appendFileSync(process.env.GITHUB_ENV,'RESTORE_VERSION_ID='+newest.id+'\n')"
       - name: Verify version two before rollback
         shell: bash
-        run: curl --fail --silent --show-error --max-time 20 --retry 2 "https://${WORKER_NAME}.${WORKERS_SUBDOMAIN}.workers.dev/" | node -e "let body='';process.stdin.on('data',c=>body+=c).on('end',()=>{if(JSON.parse(body).version!=='v2')process.exit(1)})"
+        run: node scripts/check-rollback-drill.mjs "https://${WORKER_NAME}.${WORKERS_SUBDOMAIN}.workers.dev/" v2
       - name: Roll back to version one
         shell: bash
         run: npx --yes wrangler@4.47.0 rollback "$TARGET_VERSION_ID" --config wrangler.rollback-drill.toml --message 'Isolated rollback drill' --yes
       - name: Verify rolled-back version one
         shell: bash
-        run: curl --fail --silent --show-error --max-time 20 --retry 2 "https://${WORKER_NAME}.${WORKERS_SUBDOMAIN}.workers.dev/" | node -e "let body='';process.stdin.on('data',c=>body+=c).on('end',()=>{if(JSON.parse(body).version!=='v1')process.exit(1)})"
+        run: node scripts/check-rollback-drill.mjs "https://${WORKER_NAME}.${WORKERS_SUBDOMAIN}.workers.dev/" v1
       - name: Restore version two
         if: always() && steps.deploy_v2.outcome == 'success'
         shell: bash
@@ -75,5 +75,5 @@ jobs:
       - name: Verify restored version two
         if: always() && steps.deploy_v2.outcome == 'success'
         shell: bash
-        run: curl --fail --silent --show-error --max-time 20 --retry 2 "https://${WORKER_NAME}.${WORKERS_SUBDOMAIN}.workers.dev/" | node -e "let body='';process.stdin.on('data',c=>body+=c).on('end',()=>{if(JSON.parse(body).version!=='v2')process.exit(1)})"
+        run: node scripts/check-rollback-drill.mjs "https://${WORKER_NAME}.${WORKERS_SUBDOMAIN}.workers.dev/" v2
 

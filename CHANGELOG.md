@@ -29,6 +29,8 @@ versionamento semântico. Datas usam UTC.
 
 ### Fixed
 
+- Smoke do drill de rollback aguarda a propagação de cada versão antes de validar
+  v2, rollback v1 e restauração v2, com timeout e tentativas limitadas.
 - Monitor pós-deploy passa a aguardar o check do Cloudflare após cada `push` em
   `main` e confirma que a versão publicada corresponde ao commit verificado.
 - CI deixa de referenciar `tests/transfer-search.test.cjs`, removido junto com o
