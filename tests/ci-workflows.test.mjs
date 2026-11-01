@@ -104,8 +104,12 @@ test('rollback provisioning is pinned to the disposable Worker and verifies both
  assert.match(setup,/rollback "\$TARGET_VERSION_ID"/);
  assert.match(setup,/rollback "\$RESTORE_VERSION_ID"/);
  assert.match(setup,/if: always\(\) && steps\.deploy_v2\.outcome == 'success'/);
- assert.match(setup,/version!=='v1'/);
- assert.match(setup,/version!=='v2'/);
+ assert.match(setup,/check-rollback-drill\.mjs .* v1/);
+ assert.equal((setup.match(/check-rollback-drill\.mjs .* v2/g)??[]).length,2);
+ const smoke=readFileSync(new URL('scripts/check-rollback-drill.mjs',root),'utf8');
+ assert.match(smoke,/attempt <= 30/);
+ assert.match(smoke,/AbortSignal\.timeout\(5_000\)/);
+ assert.match(smoke,/service === 'duas-rotas-rollback-drill'/);
  const config=readFileSync(new URL('wrangler.rollback-drill.toml',root),'utf8');
  assert.match(config,/name = "duas-rotas-rollback-drill"/);
  assert.match(config,/main = "scripts\/rollback-drill-worker\.mjs"/);
