@@ -50,7 +50,7 @@ jobs:
           set -euo pipefail
           npx --yes wrangler@4.47.0 deploy --config wrangler.rollback-drill.toml --var DRILL_VERSION:v1
           npx --yes wrangler@4.47.0 versions list --config wrangler.rollback-drill.toml --json > versions-v1.json
-          node -e "const fs=require('fs');const versions=JSON.parse(fs.readFileSync('versions-v1.json'));if(!versions[0]?.id)throw new Error('first version missing');fs.appendFileSync(process.env.GITHUB_ENV,'TARGET_VERSION_ID='+versions[0].id+'\n')"
+          node -e "const fs=require('fs');const versions=JSON.parse(fs.readFileSync('versions-v1.json'));const newest=versions.at(-1);if(!newest?.id)throw new Error('first version missing');fs.appendFileSync(process.env.GITHUB_ENV,'TARGET_VERSION_ID='+newest.id+'\n')"
       - name: Deploy isolated version two
         id: deploy_v2
         shell: bash
@@ -58,7 +58,7 @@ jobs:
           set -euo pipefail
           npx --yes wrangler@4.47.0 deploy --config wrangler.rollback-drill.toml --var DRILL_VERSION:v2
           npx --yes wrangler@4.47.0 versions list --config wrangler.rollback-drill.toml --json > versions-v2.json
-          node -e "const fs=require('fs');const versions=JSON.parse(fs.readFileSync('versions-v2.json'));if(!versions[0]?.id||versions[0].id===process.env.TARGET_VERSION_ID)throw new Error('second version missing');fs.appendFileSync(process.env.GITHUB_ENV,'RESTORE_VERSION_ID='+versions[0].id+'\n')"
+          node -e "const fs=require('fs');const versions=JSON.parse(fs.readFileSync('versions-v2.json'));const newest=versions.at(-1);if(!newest?.id||newest.id===process.env.TARGET_VERSION_ID)throw new Error('second version missing');fs.appendFileSync(process.env.GITHUB_ENV,'RESTORE_VERSION_ID='+newest.id+'\n')"
       - name: Verify version two before rollback
         shell: bash
         run: curl --fail --silent --show-error --max-time 20 --retry 2 "https://${WORKER_NAME}.${WORKERS_SUBDOMAIN}.workers.dev/" | node -e "let body='';process.stdin.on('data',c=>body+=c).on('end',()=>{if(JSON.parse(body).version!=='v2')process.exit(1)})"

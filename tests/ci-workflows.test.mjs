@@ -100,6 +100,7 @@ test('rollback provisioning is pinned to the disposable Worker and verifies both
  assert.match(setup,/wrangler@4\.47\.0 deploy --config wrangler\.rollback-drill\.toml/);
  assert.match(setup,/DRILL_VERSION:v1/);
  assert.match(setup,/DRILL_VERSION:v2/);
+ assert.equal((setup.match(/versions\.at\(-1\)/g)??[]).length,2);
  assert.match(setup,/rollback "\$TARGET_VERSION_ID"/);
  assert.match(setup,/rollback "\$RESTORE_VERSION_ID"/);
  assert.match(setup,/if: always\(\) && steps\.deploy_v2\.outcome == 'success'/);
