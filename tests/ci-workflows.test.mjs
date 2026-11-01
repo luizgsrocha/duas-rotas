@@ -97,7 +97,7 @@ test('rollback provisioning is pinned to the disposable Worker and verifies both
  const setup=readFileSync(new URL('.github/workflows/rollback-drill-setup.yml',root),'utf8');
  assert.match(setup,/WORKER_NAME: duas-rotas-rollback-drill/);
  assert.match(setup,/test "\$WORKER_NAME" != 'rua-nossa'/);
- assert.match(setup,/wrangler@4\.47\.0 deploy scripts\/rollback-drill-worker\.mjs/);
+ assert.match(setup,/wrangler@4\.47\.0 deploy --config wrangler\.rollback-drill\.toml/);
  assert.match(setup,/DRILL_VERSION:v1/);
  assert.match(setup,/DRILL_VERSION:v2/);
  assert.match(setup,/rollback "\$TARGET_VERSION_ID"/);
@@ -105,4 +105,8 @@ test('rollback provisioning is pinned to the disposable Worker and verifies both
  assert.match(setup,/if: always\(\) && steps\.deploy_v2\.outcome == 'success'/);
  assert.match(setup,/version!=='v1'/);
  assert.match(setup,/version!=='v2'/);
+ const config=readFileSync(new URL('wrangler.rollback-drill.toml',root),'utf8');
+ assert.match(config,/name = "duas-rotas-rollback-drill"/);
+ assert.match(config,/main = "scripts\/rollback-drill-worker\.mjs"/);
+ assert.doesNotMatch(config,/assets|routes|domain/i);
 });

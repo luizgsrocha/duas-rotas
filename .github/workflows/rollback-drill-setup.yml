@@ -48,30 +48,30 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npx --yes wrangler@4.47.0 deploy scripts/rollback-drill-worker.mjs --name "$WORKER_NAME" --compatibility-date 2026-10-01 --var DRILL_VERSION:v1
-          npx --yes wrangler@4.47.0 versions list --name "$WORKER_NAME" --json > versions-v1.json
+          npx --yes wrangler@4.47.0 deploy --config wrangler.rollback-drill.toml --var DRILL_VERSION:v1
+          npx --yes wrangler@4.47.0 versions list --config wrangler.rollback-drill.toml --json > versions-v1.json
           node -e "const fs=require('fs');const versions=JSON.parse(fs.readFileSync('versions-v1.json'));if(!versions[0]?.id)throw new Error('first version missing');fs.appendFileSync(process.env.GITHUB_ENV,'TARGET_VERSION_ID='+versions[0].id+'\n')"
       - name: Deploy isolated version two
         id: deploy_v2
         shell: bash
         run: |
           set -euo pipefail
-          npx --yes wrangler@4.47.0 deploy scripts/rollback-drill-worker.mjs --name "$WORKER_NAME" --compatibility-date 2026-10-01 --var DRILL_VERSION:v2
-          npx --yes wrangler@4.47.0 versions list --name "$WORKER_NAME" --json > versions-v2.json
+          npx --yes wrangler@4.47.0 deploy --config wrangler.rollback-drill.toml --var DRILL_VERSION:v2
+          npx --yes wrangler@4.47.0 versions list --config wrangler.rollback-drill.toml --json > versions-v2.json
           node -e "const fs=require('fs');const versions=JSON.parse(fs.readFileSync('versions-v2.json'));if(!versions[0]?.id||versions[0].id===process.env.TARGET_VERSION_ID)throw new Error('second version missing');fs.appendFileSync(process.env.GITHUB_ENV,'RESTORE_VERSION_ID='+versions[0].id+'\n')"
       - name: Verify version two before rollback
         shell: bash
         run: curl --fail --silent --show-error --max-time 20 --retry 2 "https://${WORKER_NAME}.${WORKERS_SUBDOMAIN}.workers.dev/" | node -e "let body='';process.stdin.on('data',c=>body+=c).on('end',()=>{if(JSON.parse(body).version!=='v2')process.exit(1)})"
       - name: Roll back to version one
         shell: bash
-        run: npx --yes wrangler@4.47.0 rollback "$TARGET_VERSION_ID" --name "$WORKER_NAME" --message 'Isolated rollback drill' --yes
+        run: npx --yes wrangler@4.47.0 rollback "$TARGET_VERSION_ID" --config wrangler.rollback-drill.toml --message 'Isolated rollback drill' --yes
       - name: Verify rolled-back version one
         shell: bash
         run: curl --fail --silent --show-error --max-time 20 --retry 2 "https://${WORKER_NAME}.${WORKERS_SUBDOMAIN}.workers.dev/" | node -e "let body='';process.stdin.on('data',c=>body+=c).on('end',()=>{if(JSON.parse(body).version!=='v1')process.exit(1)})"
       - name: Restore version two
         if: always() && steps.deploy_v2.outcome == 'success'
         shell: bash
-        run: npx --yes wrangler@4.47.0 rollback "$RESTORE_VERSION_ID" --name "$WORKER_NAME" --message 'Restore after isolated rollback drill' --yes
+        run: npx --yes wrangler@4.47.0 rollback "$RESTORE_VERSION_ID" --config wrangler.rollback-drill.toml --message 'Restore after isolated rollback drill' --yes
       - name: Verify restored version two
         if: always() && steps.deploy_v2.outcome == 'success'
         shell: bash
