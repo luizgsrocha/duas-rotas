@@ -1,13 +1,13 @@
 # Fila priorizada de trabalho autônomo
 
-Atualizada em 2026-10-31. O coordenador escolhe a primeira linha `ready` por
+Atualizada em 2026-11-01. O coordenador escolhe a primeira linha `ready` por
 prioridade; `blocked` não pode ser contornada. Alterações nesta tabela passam por
 PR. IDs apontam para a evidência existente, não significam que o trabalho esteja
 concluído.
 
 | Ordem | Prioridade | Estado | Trabalho | Dependência / aceite mínimo |
 |---:|---|---|---|---|
-| 1 | P0 | in_progress | Fundação autônoma (#147) | PR pendente adiciona relatório diário e drill de rollback isolado; ativação ainda exige GitHub App, credencial do modelo e ensaios autenticados |
+| 1 | P0 | blocked | Fundação autônoma (#147) | PR #167 mesclado com relatório e drill; faltam GitHub App, credencial do modelo, variável do relatório, Worker/token isolados e ensaios autenticados |
 | 2 | P1 | blocked | SEO, sitemap e histórico (#146) | Resolver/rebasear PR #146; testes, links canônicos e sitemap validados |
 | 3 | P1 | ready | Monitorar regressão de falhas upstream 403 (#145) | Main já contém #145; ampliar somente com nova evidência reproduzível |
 | 4 | P1 | blocked | Auditoria nacional de slugs (#143) | Execução manual com data explícita; revisar artefato antes de alterar slugs |
