@@ -7,6 +7,9 @@ versionamento semântico. Datas usam UTC.
 
 ### Added
 
+- Ensaio autenticado supervisionado com GitHub App de curta duração, Codex fixado,
+  sandbox, allowlist de arquivo, CI completo e PR obrigatoriamente marcado para
+  não mesclar.
 - Relatório diário idempotente na issue #147 e workflow manual de rollback que
   aceita somente Worker isolado, restaura a versão original e rejeita produção.
 - Ensaio protegido que provisiona duas versões no Worker descartável fixo,

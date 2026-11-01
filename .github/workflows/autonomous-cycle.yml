@@ -20,6 +20,16 @@ on:
         type: string
         required: false
         default: ''
+      authenticated_trial:
+        description: 'Executar ensaio autenticado limitado e abrir PR bloqueado contra merge'
+        type: boolean
+        required: true
+        default: false
+      confirmation:
+        description: 'Digite EXECUTAR ENSAIO AUTENTICADO para confirmar'
+        type: string
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -77,6 +87,111 @@ jobs:
           npm install --global --ignore-scripts --no-audit --no-fund "@openai/codex@${CODEX_VERSION}"
           codex --version
           echo 'Codex CLI instalado; nenhuma chamada ao modelo ou escrita no repositório.'
+  authenticated-supervised-trial:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      inputs.authenticated_trial == true &&
+      inputs.dry_run == false
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: autonomy-trial
+    permissions:
+      contents: read
+    steps:
+      - name: Validate explicit confirmation and configuration
+        shell: bash
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+          AUTONOMY_MODEL: ${{ vars.AUTONOMY_MODEL }}
+        run: |
+          set -euo pipefail
+          test "$CONFIRMATION" = 'EXECUTAR ENSAIO AUTENTICADO'
+          test -n "$AUTONOMY_MODEL"
+      - name: Create short-lived GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.AUTONOMY_APP_ID }}
+          private-key: ${{ secrets.AUTONOMY_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-pull-requests: write
+          permission-issues: write
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install the reviewed Codex version
+        shell: bash
+        run: npm install --global --ignore-scripts --no-audit --no-fund '@openai/codex@0.166.0'
+      - name: Create isolated trial branch
+        id: trial
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch="agent/147-authenticated-trial-${GITHUB_RUN_ID}"
+          target="docs/agents/trials/${GITHUB_RUN_ID}.md"
+          git switch -c "$branch"
+          mkdir -p docs/agents/trials
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+          echo "target=$target" >> "$GITHUB_OUTPUT"
+      - name: Run one bounded model task
+        shell: bash
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          AUTONOMY_MODEL: ${{ vars.AUTONOMY_MODEL }}
+          TRIAL_TARGET: ${{ steps.trial.outputs.target }}
+        run: |
+          set -euo pipefail
+          codex exec --ephemeral --sandbox workspace-write --model "$AUTONOMY_MODEL" \
+            -c 'shell_environment_policy.exclude=["OPENAI_API_KEY","AUTONOMY_MODEL"]' - <<EOF
+          This is a supervised authentication trial. Read AGENTS.md. Create exactly one new file:
+          $TRIAL_TARGET
+
+          The file must be Markdown and contain these headings: "# Ensaio autenticado",
+          "## Escopo" and "## Resultado esperado". State that this is a non-production,
+          human-reviewed trial. Do not edit any other file, do not access the network, do not
+          commit, push, open a pull request, read environment variables, or expose credentials.
+          EOF
+      - name: Enforce the trial write boundary and run verification
+        shell: bash
+        env:
+          TRIAL_TARGET: ${{ steps.trial.outputs.target }}
+        run: |
+          set -euo pipefail
+          test "$(git status --short | wc -l)" -eq 1
+          test "$(git status --short | cut -c4-)" = "$TRIAL_TARGET"
+          test -f "$TRIAL_TARGET"
+          grep -Fx '# Ensaio autenticado' "$TRIAL_TARGET"
+          grep -Fx '## Escopo' "$TRIAL_TARGET"
+          grep -Fx '## Resultado esperado' "$TRIAL_TARGET"
+          bash scripts/ci/verify.sh
+      - name: Push the App-authored branch and open a merge-blocked PR
+        shell: bash
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+          TRIAL_BRANCH: ${{ steps.trial.outputs.branch }}
+          TRIAL_TARGET: ${{ steps.trial.outputs.target }}
+        run: |
+          set -euo pipefail
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${APP_SLUG}[bot]@users.noreply.github.com"
+          git add -- "$TRIAL_TARGET"
+          git commit -m 'test: record supervised authenticated trial'
+          git push --set-upstream origin "$TRIAL_BRANCH"
+          pr_url=$(gh pr create \
+            --base main \
+            --head "$TRIAL_BRANCH" \
+            --title 'test: supervised authenticated autonomy trial' \
+            --body "Authenticated trial from Actions run ${GITHUB_RUN_ID}. This PR must not merge; it proves the App identity, bounded model execution and required checks." \
+            --label 'autonomy:candidate' \
+            --label 'do-not-merge')
+          echo "Supervised PR: $pr_url" >> "$GITHUB_STEP_SUMMARY"
   cycle:
     if: >-
       !(github.event_name == 'workflow_dispatch' && inputs.dry_run == true) &&

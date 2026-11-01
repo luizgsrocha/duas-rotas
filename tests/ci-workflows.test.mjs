@@ -41,6 +41,18 @@ test('automation keeps post-deploy smoke and circuit breaker fail-safe controls'
  const autonomous=readFileSync(new URL('.github/workflows/autonomous-cycle.yml',root),'utf8');
  assert.match(autonomous,/AUTONOMY_ENABLED == 'true'/);
  assert.match(autonomous,/AUTONOMY_CIRCUIT_BREAKER != 'open'/);
+ assert.match(autonomous,/environment: autonomy-trial/);
+ assert.match(autonomous,/actions\/create-github-app-token@v2/);
+ assert.match(autonomous,/permission-contents: write/);
+ assert.match(autonomous,/permission-pull-requests: write/);
+ assert.match(autonomous,/permission-issues: write/);
+ assert.match(autonomous,/@openai\/codex@0\.166\.0/);
+ assert.match(autonomous,/--ephemeral --sandbox workspace-write/);
+ assert.match(autonomous,/shell_environment_policy\.exclude/);
+ assert.match(autonomous,/scripts\/ci\/verify\.sh/);
+ assert.match(autonomous,/autonomy:candidate/);
+ assert.match(autonomous,/do-not-merge/);
+ assert.match(autonomous,/test "\$\(git status --short \| wc -l\)" -eq 1/);
 });
 
 test('published smoke verifies the checked-out release marker',()=>{
