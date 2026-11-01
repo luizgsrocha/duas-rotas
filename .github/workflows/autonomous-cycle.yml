@@ -163,8 +163,8 @@ jobs:
           TRIAL_TARGET: ${{ steps.trial.outputs.target }}
         run: |
           set -euo pipefail
-          test "$(git status --short | wc -l)" -eq 1
-          test "$(git status --short | cut -c4-)" = "$TRIAL_TARGET"
+          test "$(git status --porcelain=v1 --untracked-files=all | wc -l)" -eq 1
+          test "$(git status --porcelain=v1 --untracked-files=all | cut -c4-)" = "$TRIAL_TARGET"
           test -f "$TRIAL_TARGET"
           grep -Fx '# Ensaio autenticado' "$TRIAL_TARGET"
           grep -Fx '## Escopo' "$TRIAL_TARGET"

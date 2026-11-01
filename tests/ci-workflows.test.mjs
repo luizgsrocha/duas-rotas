@@ -52,7 +52,7 @@ test('automation keeps post-deploy smoke and circuit breaker fail-safe controls'
  assert.match(autonomous,/scripts\/ci\/verify\.sh/);
  assert.match(autonomous,/autonomy:candidate/);
  assert.match(autonomous,/do-not-merge/);
- assert.match(autonomous,/test "\$\(git status --short \| wc -l\)" -eq 1/);
+ assert.match(autonomous,/git status --porcelain=v1 --untracked-files=all/);
 });
 
 test('published smoke verifies the checked-out release marker',()=>{
