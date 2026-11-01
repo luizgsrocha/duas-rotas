@@ -21,6 +21,9 @@ versionamento semântico. Datas usam UTC.
 
 ### Changed
 
+- Recuperação de deploy registra o run protegido `41363404781`, que comprovou
+  deploy v1/v2, rollback para v1 e restauração da v2 no Worker isolado, sem tocar
+  a produção.
 - Estado da autonomia registra os preflights reais do runner GitHub-hosted e da
   instalação exata do Codex 0.166.0, mantendo a ativação bloqueada sem credenciais.
 - Regressão de transferências passa a executar os testes atuais de rotas, RN-HUB,
