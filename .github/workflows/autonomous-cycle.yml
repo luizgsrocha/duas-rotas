@@ -40,7 +40,7 @@ concurrency:
 
 jobs:
   hosted-runner-preflight:
-    if: github.event_name == 'workflow_dispatch' && inputs.dry_run == true && inputs.codex_install_test != true
+    if: github.event_name == 'workflow_dispatch' && inputs.dry_run == true && inputs.codex_install_test != true && inputs.authenticated_trial != true
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -59,7 +59,7 @@ jobs:
           test -f docs/autonomy/ACTIVATION.md
           echo 'Hosted runner preflight OK: checkout e contratos disponíveis; nenhuma IA executada.'
   codex-install-preflight:
-    if: github.event_name == 'workflow_dispatch' && inputs.dry_run == true && inputs.codex_install_test == true
+    if: github.event_name == 'workflow_dispatch' && inputs.dry_run == true && inputs.codex_install_test == true && inputs.authenticated_trial != true
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -91,7 +91,9 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' &&
       inputs.authenticated_trial == true &&
-      inputs.dry_run == false
+      inputs.dry_run == false &&
+      inputs.codex_install_test != true &&
+      vars.AUTONOMY_CIRCUIT_BREAKER != 'open'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     environment: autonomy-trial
@@ -196,9 +198,13 @@ jobs:
           echo "Supervised PR: $pr_url" >> "$GITHUB_STEP_SUMMARY"
   cycle:
     if: >-
-      !(github.event_name == 'workflow_dispatch' && inputs.dry_run == true) &&
+      (github.event_name == 'schedule' ||
+       (github.event_name == 'workflow_dispatch' &&
+        inputs.dry_run == false &&
+        inputs.authenticated_trial != true &&
+        inputs.codex_install_test != true)) &&
       vars.AUTONOMY_ENABLED == 'true' &&
-      vars.AUTONOMY_CIRCUIT_BREAKER != 'open'
+      vars.AUTONOMY_CIRCUIT_BREAKER == 'closed'
     runs-on: ubuntu-latest
     timeout-minutes: 50
     steps:
