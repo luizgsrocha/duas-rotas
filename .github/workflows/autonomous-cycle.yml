@@ -145,13 +145,13 @@ jobs:
       - name: Run one bounded model task
         shell: bash
         env:
-          CODEX_API_KEY: ${{ secrets.CODEX_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.CODEX_API_KEY }}
           AUTONOMY_MODEL: ${{ vars.AUTONOMY_MODEL }}
           TRIAL_TARGET: ${{ steps.trial.outputs.target }}
         run: |
           set -euo pipefail
           codex exec --ephemeral --sandbox workspace-write --model "$AUTONOMY_MODEL" \
-            -c 'shell_environment_policy.exclude=["CODEX_API_KEY","AUTONOMY_MODEL"]' - <<EOF
+            -c 'shell_environment_policy.exclude=["OPENAI_API_KEY","CODEX_API_KEY","AUTONOMY_MODEL"]' - <<EOF
           This is a supervised authentication trial. Read AGENTS.md. Create exactly one new file:
           $TRIAL_TARGET
 
