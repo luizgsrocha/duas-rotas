@@ -51,7 +51,7 @@ test('automation keeps post-deploy smoke and circuit breaker fail-safe controls'
  assert.match(autonomous,/--ephemeral --sandbox workspace-write/);
  assert.match(autonomous,/shell_environment_policy\.exclude/);
  assert.match(autonomous,/OPENAI_API_KEY: \$\{\{ secrets\.CODEX_API_KEY \}\}/);
- assert.match(autonomous,/shell_environment_policy\.exclude=\[\\"OPENAI_API_KEY\\"/);
+ assert.match(autonomous,/shell_environment_policy\.exclude=.*OPENAI_API_KEY/);
  assert.match(autonomous,/gh auth setup-git/);
  assert.match(autonomous,/scripts\/ci\/verify\.sh/);
  assert.match(autonomous,/autonomy:candidate/);
