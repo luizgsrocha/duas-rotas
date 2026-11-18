@@ -45,7 +45,6 @@ def main() -> None:
     populations = {r.key: int(r.population) for r in population.itertuples() if pd.notna(r.population)}
 
     regic = pd.read_excel(args.regic, sheet_name="Hierarquia e região")
-    regic_by_code = {int(r.codmun): r for r in regic.itertuples()}
     regic_by_key = {f"{normalized(r.Município)}:{r.siguf}": r for r in regic.itertuples()}
     links = pd.read_excel(args.links, sheet_name="2018")
     incoming = Counter(int(x) for x in links["coddest"].dropna())
@@ -67,7 +66,6 @@ def main() -> None:
             unmatched_regic.append(key)
             hierarchy_code, degree = "5", 0
         else:
-            hierarchy_code = str(getattr(regic_row, "_10", "5"))
             # pandas sanitizes the duplicate "Hierarquia 3" heading; prefer the
             # stable codmun lookup and obtain the code by position.
             raw = str(regic.loc[regic["codmun"] == regic_row.codmun, "Hierarquia 3"].iloc[0])
